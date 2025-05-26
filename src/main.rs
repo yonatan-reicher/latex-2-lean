@@ -3,11 +3,22 @@ use std::io;
 use thiserror::Error;
 
 const HELP_MSG: &str = r#"
-Proofy - A simple proof assistant with markdown+latex compatible syntax.
+latex-2-lean - Converting LaTeX definitions from markdown files to lean code.
 
-Usage: proofy <file>
+Usage: latex-2-lean <file>
 "#
 .trim_ascii();
+
+#[derive(Debug, Clone, Error)]
+#[error("{message}")]
+struct MarkdownError {
+    message: markdown::message::Message,
+}
+impl MarkdownError {
+    fn new(message: markdown::message::Message) -> Self {
+        Self { message }
+    }
+}
 
 #[derive(Debug, Error)]
 enum Error {
@@ -17,8 +28,8 @@ enum Error {
     FailedToReadInputFile(#[from] io::Error),
     #[error("Parse error: {0}")]
     Parse(#[from] ParseError),
-    #[error("Proof error: {0}")]
-    Proof(#[from] proofy::prelude::Error),
+    #[error("Markdown error: {0}")]
+    Markdown(#[from] MarkdownError),
 }
 
 fn get_file_path() -> Result<String, Error> {
@@ -40,11 +51,22 @@ fn main() {
     try_except(|| {
         let file_path = get_file_path()?;
         let text = std::fs::read_to_string(file_path)?;
-        let prog = parse(&text)?;
-        println!("Input:\n{:#?}", prog);
-        println!("Pretty:\n{}", format_program(&prog));
-        check_program(&prog)?;
-        println!("Proof is valid!");
+        let ast = markdown::to_mdast(
+            &text,
+            &markdown::ParseOptions {
+                constructs: markdown::Constructs {
+                    math_flow: true,
+                    math_text: true,
+                    ..markdown::ParseOptions::gfm().constructs
+                },
+                ..markdown::ParseOptions::gfm()
+            },
+        ).map_err(MarkdownError::new)?;
+        let proof = parse(&ast)?;
+        println!("Input:\n{:#?}", proof);
+        // println!("Pretty:\n{}", format(&proof));
+        // check_program(&proof)?;
+        // println!("Proof is valid!");
         Ok(())
     }, |err| {
         eprintln!("ERROR: {}\n", err);

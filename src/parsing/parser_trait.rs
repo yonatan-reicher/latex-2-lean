@@ -1,7 +1,9 @@
 //! This module defines the `Parser` trait, which abstracts implementation
 //! details of parsing.
 
-pub trait Parser {
+pub type Pos = markdown::unist::Position;
+
+pub trait Parser<'input> {
     type Out<T>;
     type Err;
 
@@ -16,11 +18,14 @@ pub trait Parser {
     fn and_then<T, U>(this: Self::Out<T>, f: impl FnOnce(T) -> Self::Out<U>) -> Self::Out<U>;
 
     fn pop_keyword(&mut self, keyword: &str) -> bool;
-    fn pop_name(&mut self) -> Option<String>;
+    fn pop_symbol(&mut self, symbol: &str) -> bool;
+    fn pop_name(&mut self) -> Option<&'input str>;
     type ClosingBracket;
     fn pop_bracket(&mut self) -> Option<Self::ClosingBracket>;
     fn pop_closing_bracket(&mut self, b: Self::ClosingBracket) -> bool;
     // TODO: Make this non-mut
     fn eof(&mut self) -> bool;
+
+    fn new(text: &'input str, start: Pos) -> Self;
 }
 

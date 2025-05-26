@@ -1,4 +1,5 @@
 use super::parser_trait::Parser as ParserTrait;
+use super::parser_trait::Pos;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Bracket {
@@ -63,7 +64,7 @@ impl<'input, E> Parser<'input, E> {
     }
 }
 
-impl<'input, E> ParserTrait for Parser<'input, E> {
+impl<'input, E> ParserTrait<'input> for Parser<'input, E> {
     type Err = E;
     type Out<T> = Result<T, Self::Err>;
 
@@ -95,7 +96,18 @@ impl<'input, E> ParserTrait for Parser<'input, E> {
         }
     }
 
-    fn pop_name(&mut self) -> Option<String> {
+    fn pop_symbol(&mut self, symbol: &str) -> bool {
+        self.skip_whitespace();
+        let remaining = &self.input[self.position..];
+        if remaining.starts_with(symbol) {
+            self.position += symbol.len();
+            true
+        } else {
+            false
+        }
+    }
+
+    fn pop_name(&mut self) -> Option<&'input str> {
         self.skip_whitespace();
         let remaining = &self.input[self.position..];
         let first_non_letter = remaining
@@ -106,11 +118,11 @@ impl<'input, E> ParserTrait for Parser<'input, E> {
         if let Some((index, _)) = first_non_letter {
             let name = &remaining[..index];
             self.position += index;
-            Some(name.to_string())
+            Some(name)
         } else if !remaining.is_empty() {
             let name = remaining;
             self.position += remaining.len();
-            Some(name.to_string())
+            Some(name)
         } else {
             None
         }
@@ -143,5 +155,9 @@ impl<'input, E> ParserTrait for Parser<'input, E> {
     fn eof(&mut self) -> bool {
         self.skip_whitespace();
         self.rest().is_empty()
+    }
+
+    fn new(text: &'input str, _start: Pos) -> Self {
+        Self::new(text)
     }
 }

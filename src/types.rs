@@ -1,33 +1,19 @@
-use thiserror::Error;
-
-/** A fact or question that can be proved or disproved. */
+/// A latex term such as `x` of `\{ x \in \mathbb{N} \mid x > 10 \}`.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Prop {
+pub enum Term {
     Var(String),
-    Implies(Box<Prop>, Box<Prop>),
-    Forall(String, Box<Prop>),
+    Number(String),
+    // TODO
 }
 
-/** Something that does something to the environment. */
+/// A definition of something that we want to convert to lean.
 #[derive(Clone, Debug)]
-pub enum Statement {
-    Assume(Prop),
-    Assert(Prop),
+pub struct Definition {
+    pub name: String,
+    pub term: Term,
 }
 
 #[derive(Debug)]
-pub struct Program {
-    pub statements: Vec<Statement>,
-}
-
-#[derive(Default)]
-pub struct Env {
-    pub remembered: Vec<Prop>,
-}
-
-// TODO: Move to the verification/checking/semantics module.
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("Bad assertion")]
-    BadAssert,
+pub struct Proof {
+    pub definitions: Vec<Definition>,
 }

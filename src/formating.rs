@@ -1,3 +1,11 @@
+use crate::types::Proof;
+
+pub fn format(p: &Proof) -> String {
+    todo!();
+}
+
+
+/*
 //! This file is all about printing formulas in latex.
 
 use crate::types::*;
@@ -93,3 +101,4 @@ mod tests {
         );
     }
 }
+*/

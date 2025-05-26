@@ -2,108 +2,91 @@
 
 use super::parser_trait::Parser;
 use crate::precedence::Precedence;
-use crate::types::{Program, Prop, Statement};
+use crate::types::{Definition, Proof, Term};
+use markdown::mdast::Node;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("Bracket mismatch")]
-    BracketMismatch,
-    #[error("Expected a proposition here")]
-    ExpecetedAPropositionHere,
-    #[error("Expected a name after quantifier")]
-    ExpecetedNameAfterQuantifier,
-    #[error("Expected a statement. A statement must start with either `Assume` or `Assert`")]
-    BadStatementStart,
+    #[error("A definition must start with a name (e.g. `A = ...`)")]
+    NameExpected,
+    #[error("A definition must have an equal sign (e.g. `A = ...`)")]
+    EqualSignExpected,
 }
 
 #[derive(Debug)]
 pub enum Warning {}
 
-// TODO: Use macro_rules to fight the boilerplate
-fn prop_prec<P: Parser<Err = Error>>(input: &mut P, precedence: Precedence) -> P::Out<Prop> {
-    use Prop::*;
-
-    // Brackets ( [ {
-    if let Some(b) = input.pop_bracket() {
-        let inner = prop_prec(input, Precedence::min());
-        if !input.pop_closing_bracket(b) {
-            return input.error(Error::BracketMismatch);
-        }
-        return inner;
-    }
-
-    // Variables
-    if let Precedence::Var = precedence {
-        let Some(name) = input.pop_name() else {
-            return input.error(Error::ExpecetedAPropositionHere);
-        };
-        return input.ret(Var(name));
-    }
-
-    if precedence == Precedence::Quantifier && input.pop_keyword("\\forall") {
-        let Some(name) = input.pop_name() else {
-            return input.error(Error::ExpecetedNameAfterQuantifier);
-        };
-        let inner = prop_prec(input, Precedence::Quantifier.inc());
-        return P::map(inner, |inner| Forall(name, Box::new(inner)));
-    }
-
-    P::and_then(
-        // First parse the left side of some operator
-        prop_prec(input, precedence.inc()),
-        |left| {
-            if precedence == Precedence::Implies && input.pop_keyword("\\implies") {
-                return P::and_then(prop_prec(input, precedence.inc()), |right| {
-                    input.ret(Implies(Box::new(left), Box::new(right)))
-                });
-            }
-            // Operator was not found! Return the lhs as the expression
-            input.ret(left)
-        },
-    )
+fn term<'input, P: Parser<'input, Err = Error>>(p: &mut P) -> P::Out<Term> {
+    p.ret(Term::Number("123".to_string()))// TODO
 }
 
-pub fn prop<P: Parser<Err = Error>>(input: &mut P) -> P::Out<Prop> {
-    prop_prec(input, Precedence::min())
-}
+fn definition<'input, P: Parser<'input, Err = Error>>(p: &mut P) -> P::Out<Definition> {
+    let Some(name) = p.pop_name() else {
+        return p.error(Error::NameExpected);
+    };
 
-pub fn statement<P: Parser<Err = Error>>(p: &mut P) -> P::Out<Statement> {
-    // TODO: The inner `prop` should b wrapped in $$ to resemble latex syntax.
-    if p.pop_keyword("Assert") {
-        let inner = prop(p);
-        return P::map(inner, Statement::Assert);
+    if !p.pop_symbol("=") {
+        return p.error(Error::EqualSignExpected);
     }
-    if p.pop_keyword("Assume") {
-        let inner = prop(p);
-        return P::map(inner, Statement::Assume);
-    }
-    p.error(Error::BadStatementStart)
-}
 
-fn statements<P: Parser<Err = Error>>(
-    p: &mut P,
-    mut acc: Vec<Statement>,
-) -> P::Out<Vec<Statement>> {
-    if p.eof() {
-        return p.ret(acc);
-    }
-    let s = statement(p);
-    P::and_then(s, |s| {
-        acc.push(s);
-        statements(p, acc)
+    P::map(term(p), |term| Definition {
+        name: name.to_string(),
+        term,
     })
 }
 
-pub fn program<P: Parser<Err = Error>>(p: &mut P) -> P::Out<Program> {
-    let s = statements(p, vec![]);
-    P::map(s, |s| Program { statements: s })
+fn definition_node<'input, P: Parser<'input, Err = Error>>(
+    node: &'input Node,
+) -> Option<P::Out<Definition>> {
+    let (latex_text, position) = match node {
+        Node::InlineMath(inline_math) => (&inline_math.value, inline_math.position.as_ref()),
+        Node::Math(math) => (&math.value, math.position.as_ref()),
+        _ => return None,
+    };
+
+    let position = position.expect("Node must have a position");
+    let mut parser = P::new(latex_text, position.clone());
+    let result = definition(&mut parser);
+    // TODO: Make sure that the parser has reached the end of the input
+    Some(result)
+}
+
+fn children_recursive<'input>(
+    markdown: &'input Node,
+) -> Box<dyn Iterator<Item = &'input Node> + 'input> {
+    let iter = markdown
+        .children()
+        .into_iter()
+        .flat_map(|v| v.iter())
+        .flat_map(move |child| std::iter::once(child).chain(children_recursive(child)));
+    Box::new(iter)
+}
+
+pub fn proof<'input, P: Parser<'input, Err = Error>>(markdown: &'input Node) -> P::Out<Proof> {
+    let definitions = children_recursive(markdown)
+        .filter_map(definition_node::<'input, P>)
+        // Now we have an iterator of `P::Out<Definition>`
+        .fold(None, |acc, def| match acc {
+            None => Some(P::map(def, |d| vec![d])),
+            Some(defs) => Some(P::and_then(defs, |mut defs| {
+                P::map(def, |d| {
+                    defs.push(d);
+                    defs
+                })
+            })),
+        });
+    P::map(
+        definitions.expect("No definitions in the program!"),
+        |definitions| Proof { definitions },
+    )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    /*
     #[test]
     fn forall_implies_forall() {
         enum TestParser {
@@ -215,4 +198,5 @@ mod tests {
             )
         );
     }
+    */
 }
