@@ -1,8 +1,25 @@
+#[derive(Clone, Debug)]
+pub enum SetComprehension {
+    /// { x ∈ N | x > 10 }
+    Filtering {
+        variable: String,
+        set: Box<Term>,
+        condition: Box<Term>,
+    },
+    /// { x + 1 | x ∈ N }
+    Mapping {
+        expression: Box<Term>,
+        condition: Box<Term>,
+    },
+}
+
 /// A latex term such as `x` of `\{ x \in \mathbb{N} \mid x > 10 \}`.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub enum Term {
     Var(String),
     Number(String),
+    Set(Vec<Term>),
+    SetComprehension(SetComprehension),
     // TODO
 }
 

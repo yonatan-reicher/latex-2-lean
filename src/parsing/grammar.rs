@@ -2,7 +2,7 @@
 
 use super::parser_trait::Parser;
 use crate::precedence::Precedence;
-use crate::types::{Definition, Proof, Term};
+use crate::types::{Definition, Proof, Term, SetComprehension};
 use markdown::mdast::Node;
 use thiserror::Error;
 
@@ -12,13 +12,56 @@ pub enum Error {
     NameExpected,
     #[error("A definition must have an equal sign (e.g. `A = ...`)")]
     EqualSignExpected,
+    #[error("Expected a closing bracket for the set")]
+    EndOfSetExpected,
 }
 
 #[derive(Debug)]
 pub enum Warning {}
 
+fn set_term<'input, P: Parser<'input, Err = Error>>(p: &mut P) -> Option<P::Out<Term>> {
+    if !p.pop_symbol("\\{") { return None; }
+    if p.pop_symbol("\\}") { return Some(p.ret(Term::Set(vec![]))); }
+    
+    let t1 = term(p);
+    if p.pop_symbol("\\mid") {
+        // This is a set comprehension term
+        let cond = term(p);
+        if !p.pop_symbol("\\}") {
+            return Some(p.error(Error::EndOfSetExpected));
+        }
+        return Some(P::and_then(t1, |t1| {
+            P::map(cond, |cond| Term::SetComprehension(SetComprehension::Mapping {
+                expression: Box::new(t1),
+                condition: Box::new(cond),
+            }) )
+        }));
+    }
+
+    // This is a set term which is not a comprehension
+
+    let mut terms = P::map(t1, |t1| vec![t1]);
+    while p.pop_symbol(",") {
+        let t = term(p);
+        terms = P::and_then(terms, |mut terms| {
+            P::map(t, |t| {
+                terms.push(t);
+                terms
+            })
+        })
+    }
+    if !p.pop_symbol("\\}") {
+        return Some(p.error(Error::EndOfSetExpected));
+    }
+    Some(P::map(terms, Term::Set))
+}
+
 fn term<'input, P: Parser<'input, Err = Error>>(p: &mut P) -> P::Out<Term> {
-    p.ret(Term::Number("123".to_string()))// TODO
+    if let Some(t) = set_term(p) { return t; }
+    if let Some(name) = p.pop_name() {
+        return p.ret(Term::Var(name.to_string()));
+    }
+    todo!()
 }
 
 fn definition<'input, P: Parser<'input, Err = Error>>(p: &mut P) -> P::Out<Definition> {
