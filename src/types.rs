@@ -6,7 +6,7 @@ pub enum SetComprehension {
         set: Box<Term>,
         condition: Box<Term>,
     },
-    /// { x + 1 | x ∈ N }
+    /// { x + 1 | x ∈ N, x > 9 }
     Mapping {
         expression: Box<Term>,
         condition: Box<Term>,
