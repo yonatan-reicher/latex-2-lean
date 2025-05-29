@@ -1,4 +1,4 @@
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SetComprehension {
     /// { x ∈ N | x > 10 }
     Filtering {
@@ -14,7 +14,7 @@ pub enum SetComprehension {
 }
 
 /// A latex term such as `x` of `\{ x \in \mathbb{N} \mid x > 10 \}`.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Term {
     Var(String),
     Number(String),
@@ -24,7 +24,7 @@ pub enum Term {
 }
 
 /// A definition of something that we want to convert to lean.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Definition {
     pub name: String,
     pub term: Term,
