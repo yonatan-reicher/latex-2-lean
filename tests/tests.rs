@@ -1,4 +1,5 @@
 use latex_2_lean::prelude::*;
+use indoc::indoc;
 
 fn get_proof(text: &str) -> Proof {
     let ast = markdown::to_mdast(text, &markdown_parse_options()).expect("Valid markdown");
@@ -11,11 +12,11 @@ fn get_lean_code(text: &str) -> Vec<String> {
 
 #[test]
 fn simple_set_definition() {
-    let proof = get_proof(r#"
+    let proof = get_proof(indoc! {r#"
         $$
         A = \{ 1, 2, 3 \}
         $$
-    "#);
+    "#});
     assert_eq!(proof.definitions, vec![Definition {
         name: "A".to_string(),
         term: Term::Set(vec![
@@ -28,11 +29,11 @@ fn simple_set_definition() {
 
 #[test]
 fn simple_lean_code() {
-    let lean = get_lean_code(r#"
+    let lean = get_lean_code(indoc! {r#"
         $$
         A = \{ 1, 2, 3 \}
         $$
-    "#);
+    "#});
     assert_eq!(lean, vec![
         "def A := { 1, 2, 3 }".to_string()
     ]);
