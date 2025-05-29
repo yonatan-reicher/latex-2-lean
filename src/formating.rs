@@ -1,6 +1,6 @@
 use crate::types::Proof;
 
-pub fn format(p: &Proof) -> String {
+pub fn format(_p: &Proof) -> String {
     todo!();
 }
 

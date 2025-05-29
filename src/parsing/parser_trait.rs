@@ -3,6 +3,7 @@
 
 pub type Pos = markdown::unist::Position;
 
+#[allow(dead_code)] // TODO
 pub trait Parser<'input> {
     type Out<T>;
     type Err;

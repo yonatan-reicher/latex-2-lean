@@ -6,12 +6,15 @@ use unit_enum::UnitEnum;
 /// the highest precedence, and quantifiers have very low precedence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, UnitEnum)]
 #[repr(u8)]
+//TODO
+#[allow(dead_code)]
 pub enum Precedence {
     Implies,
     Quantifier,
     Var,
 }
 
+#[allow(dead_code)] // TODO
 impl Precedence {
     /// Adds, saturating.
     #[inline]

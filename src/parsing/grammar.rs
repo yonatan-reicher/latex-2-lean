@@ -1,6 +1,7 @@
 //! This module defines the grammar of the language.
 
 use super::parser_trait::Parser;
+#[allow(unused_imports)] // TODO
 use crate::precedence::Precedence;
 use crate::types::{Definition, Proof, Term, SetComprehension};
 use markdown::mdast::Node;
@@ -9,15 +10,12 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum Error {
     #[error("A definition must start with a name (e.g. `A = ...`)")]
-    NameExpected,
+    NameAtDefinitionStart,
     #[error("A definition must have an equal sign (e.g. `A = ...`)")]
-    EqualSignExpected,
+    EqualAfterDefinitionName,
     #[error("Expected a closing bracket for the set")]
-    EndOfSetExpected,
+    ClosingBracket,
 }
-
-#[derive(Debug)]
-pub enum Warning {}
 
 fn set_term<'input, P: Parser<'input, Err = Error>>(p: &mut P) -> Option<P::Out<Term>> {
     if !p.pop_symbol("\\{") { return None; }
@@ -28,7 +26,7 @@ fn set_term<'input, P: Parser<'input, Err = Error>>(p: &mut P) -> Option<P::Out<
         // This is a set comprehension term
         let cond = term(p);
         if !p.pop_symbol("\\}") {
-            return Some(p.error(Error::EndOfSetExpected));
+            return Some(p.error(Error::ClosingBracket));
         }
         return Some(P::and_then(t1, |t1| {
             P::map(cond, |cond| Term::SetComprehension(SetComprehension::Mapping {
@@ -51,7 +49,7 @@ fn set_term<'input, P: Parser<'input, Err = Error>>(p: &mut P) -> Option<P::Out<
         })
     }
     if !p.pop_symbol("\\}") {
-        return Some(p.error(Error::EndOfSetExpected));
+        return Some(p.error(Error::ClosingBracket));
     }
     Some(P::map(terms, Term::Set))
 }
@@ -66,11 +64,11 @@ fn term<'input, P: Parser<'input, Err = Error>>(p: &mut P) -> P::Out<Term> {
 
 fn definition<'input, P: Parser<'input, Err = Error>>(p: &mut P) -> P::Out<Definition> {
     let Some(name) = p.pop_name() else {
-        return p.error(Error::NameExpected);
+        return p.error(Error::NameAtDefinitionStart);
     };
 
     if !p.pop_symbol("=") {
-        return p.error(Error::EqualSignExpected);
+        return p.error(Error::EqualAfterDefinitionName);
     }
 
     P::map(term(p), |term| Definition {
@@ -127,6 +125,8 @@ pub fn proof<'input, P: Parser<'input, Err = Error>>(markdown: &'input Node) -> 
 
 #[cfg(test)]
 mod tests {
+    // TODO: Add a test and remove this allow
+    #[allow(unused_imports)]
     use super::*;
 
     /*

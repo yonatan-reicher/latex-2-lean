@@ -26,11 +26,10 @@ pub fn term(t: &Term) -> String {
     }
 }
 
-pub fn definition(def: &Definition) -> String {
-    format!("def {} := {}", def.name, term(&def.term))
+pub fn definition(def: &Definition) -> Vec<String> {
+    vec![format!("def {} := {}", def.name, term(&def.term))]
 }
 
-pub fn proof(proof: &Proof) -> String {
-    let definitions_str: Vec<String> = proof.definitions.iter().map(definition).collect();
-    definitions_str.join("\n")
+pub fn proof(proof: &Proof) -> Vec<String> {
+    proof.definitions.iter().flat_map(definition).collect()
 }
