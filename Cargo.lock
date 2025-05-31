@@ -9,6 +9,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "136d3e02915a2cea4d74caa8681e2d44b1c3254bdbf17d11d41d587ff858832c"
 
 [[package]]
+name = "flat_vec"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b48317a912b620addec1d59ff775003329cb2007d945faac3dcf974c472c3de"
+
+[[package]]
 name = "indoc"
 version = "2.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -19,6 +25,7 @@ name = "latex-2-lean"
 version = "0.1.0"
 dependencies = [
  "constcat",
+ "flat_vec",
  "indoc",
  "markdown",
  "thiserror",
