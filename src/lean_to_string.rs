@@ -3,6 +3,21 @@
 use crate::lean::{Program, Term, TopLevel};
 use flat_vec::flat_vec;
 
+trait Strings: Iterator<Item = String> + Sized {
+    fn indent(self) -> Vec<String> {
+        self.map(|line| format!("  {line}")).collect()
+    }
+
+    fn add_to_last(self, suffix: &str) -> Vec<String> {
+        let mut vec: Vec<String> = self.collect();
+        if let Some(last) = vec.last_mut() {
+            *last += suffix;
+        }
+        vec
+    }
+}
+impl<I: Iterator<Item = String>> Strings for I {}
+
 fn term(t: &Term) -> Vec<String> {
     match t {
         Term::Var(name) => vec![name.to_string()],
