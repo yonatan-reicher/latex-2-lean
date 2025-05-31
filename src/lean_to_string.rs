@@ -22,14 +22,26 @@ fn term(t: &Term) -> Vec<String> {
     match t {
         Term::Var(name) => vec![name.to_string()],
         Term::Number(num) => vec![num.to_string()],
-        Term::Set => todo!(),
-        Term::Finset => todo!(),
+        Term::Set(terms) => flat_vec![
+            "{".to_string(),
+            flat terms.iter().flat_map(|t| {
+                term(t).into_iter().add_to_last(",")
+            }).indent(),
+            "}".to_string(),
+        ],
+        Term::Finset(terms) => flat_vec![
+            "{".to_string(),
+            flat terms.iter().flat_map(|t| {
+                term(t).into_iter().add_to_last(",")
+            }).indent(),
+            "}.toFinset".to_string(),
+        ],
     }
 }
 
 fn top_level(tl: &TopLevel) -> Vec<String> {
     match tl {
-        TopLevel::Def { name, term:t } => {
+        TopLevel::Def { name, term: t } => {
             flat_vec![
                 format!("def {name} :="),
                 flat term(t),
@@ -39,10 +51,7 @@ fn top_level(tl: &TopLevel) -> Vec<String> {
 }
 
 fn program(p: &Program) -> Vec<String> {
-    p.top_levels
-        .iter()
-        .flat_map(top_level)
-        .collect()
+    p.top_levels.iter().flat_map(top_level).collect()
 }
 
 pub fn lean_to_string(p: &Program) -> String {

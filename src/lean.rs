@@ -5,9 +5,9 @@ pub enum Term {
     /// 123
     Number(String),
     /// { 1, 2 }
-    Set,
+    Set(Vec<Term>),
     /// { 1, 2 }.toFinset
-    Finset,
+    Finset(Vec<Term>),
     // { x ∈ N | x > 10 }.toFinset
 }
 
