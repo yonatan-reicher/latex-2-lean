@@ -2,7 +2,7 @@ mod parser_trait;
 mod grammar;
 mod parser_impl;
 
-use crate::types::Proof;
+use crate::ast::Proof;
 pub type Error = grammar::Error;
 
 pub fn parse(

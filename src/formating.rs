@@ -1,4 +1,4 @@
-use crate::types::Proof;
+use crate::ast::Proof;
 
 pub fn format(_p: &Proof) -> String {
     todo!();

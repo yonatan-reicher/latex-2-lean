@@ -3,7 +3,7 @@
 use super::parser_trait::Parser;
 #[allow(unused_imports)] // TODO
 use crate::precedence::Precedence;
-use crate::types::{Definition, Proof, Term, SetComprehension};
+use crate::ast::{Definition, Proof, Term, SetComprehension};
 use markdown::mdast::Node;
 use thiserror::Error;
 

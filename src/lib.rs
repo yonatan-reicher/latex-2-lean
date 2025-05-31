@@ -1,4 +1,4 @@
-mod types;
+mod ast;
 mod lean;
 mod precedence;
 mod formating;
@@ -19,7 +19,7 @@ pub fn markdown_parse_options() -> markdown::ParseOptions {
 
 pub mod prelude {
     use super::*;
-    pub use types::*;
+    pub use ast::*;
     pub use super::markdown_parse_options;
     pub use parsing::parse;
     pub use parsing::Error as ParseError;
