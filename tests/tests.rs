@@ -1,4 +1,4 @@
-use latex_2_lean::prelude::*;
+use latex_2_lean::*;
 use indoc::indoc;
 
 fn get_proof(text: &str) -> Proof {
@@ -6,8 +6,8 @@ fn get_proof(text: &str) -> Proof {
     parse(&ast).expect("Valid proof")
 }
 
-fn get_lean_code(text: &str) -> Vec<String> {
-    to_lean(&get_proof(text))
+fn get_lean_code(text: &str) -> String {
+    lean_to_string(&ast_to_lean(&get_proof(text)))
 }
 
 #[test]
@@ -34,7 +34,7 @@ fn simple_lean_code() {
         A = \{ 1, 2, 3 \}
         $$
     "#});
-    assert_eq!(lean, vec![
-        "def A := { 1, 2, 3 }".to_string()
-    ]);
+    assert_eq!(lean, indoc! {r#"
+        def A := { 1, 2, 3 }
+    "#});
 }

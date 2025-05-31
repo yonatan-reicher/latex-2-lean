@@ -27,4 +27,4 @@ pub use parsing::Error as ParseError;
 pub use formating::format;
 pub use parsing::parse;
 pub use ast_to_lean::proof as ast_to_lean;
-pub use lean_to_string::program as lean_to_string;
+pub use lean_to_string::lean_to_string;

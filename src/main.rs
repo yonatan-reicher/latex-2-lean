@@ -1,4 +1,4 @@
-use latex_2_lean::prelude::*;
+use latex_2_lean::*;
 use std::io;
 use thiserror::Error;
 
