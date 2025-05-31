@@ -1,6 +1,6 @@
 //! This module is responsible for converting definitions to Lean code.
 
-use crate::lean::{Program, TopLevel, Term};
+use crate::lean::{Program, Term, TopLevel};
 use flat_vec::flat_vec;
 
 fn term(t: &Term) -> Vec<String> {
