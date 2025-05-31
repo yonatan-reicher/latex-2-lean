@@ -1,6 +1,38 @@
 //! This module is responsible for converting definitions to Lean code.
 
-use crate::lean::{Definition, Proof, SetComprehension, Term};
+use crate::lean::{Program, TopLevel, Term};
+use flat_vec::flat_vec;
+
+fn term(t: &Term) -> Vec<String> {
+    match t {
+        Term::Var(name) => vec![name.to_string()],
+        Term::Number(num) => vec![num.to_string()],
+        Term::Set => todo!(),
+        Term::Finset => todo!(),
+    }
+}
+
+fn top_level(tl: &TopLevel) -> Vec<String> {
+    match tl {
+        TopLevel::Def { name, term:t } => {
+            flat_vec![
+                format!("def {name} :="),
+                flat term(t),
+            ]
+        }
+    }
+}
+
+fn program(p: &Program) -> Vec<String> {
+    p.top_levels
+        .iter()
+        .flat_map(top_level)
+        .collect()
+}
+
+pub fn lean_to_string(p: &Program) -> String {
+    program(p).join("\n")
+}
 
 /*
 pub fn term(t: &Term) -> String {
