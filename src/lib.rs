@@ -1,9 +1,12 @@
+// Types
 mod ast;
 mod lean;
 mod precedence;
+// Things we do with types
 mod formating;
 mod parsing;
-mod to_lean;
+mod ast_to_lean;
+mod lean_to_string;
 
 pub fn markdown_parse_options() -> markdown::ParseOptions {
     use markdown::{Constructs, ParseOptions};
@@ -17,12 +20,11 @@ pub fn markdown_parse_options() -> markdown::ParseOptions {
     }
 }
 
-pub mod prelude {
-    use super::*;
-    pub use ast::*;
-    pub use super::markdown_parse_options;
-    pub use parsing::parse;
-    pub use parsing::Error as ParseError;
-    pub use formating::format;
-    pub use to_lean::proof as to_lean;
-}
+// Types
+pub use ast::*;
+pub use parsing::Error as ParseError;
+// Functionality
+pub use formating::format;
+pub use parsing::parse;
+pub use ast_to_lean::proof as ast_to_lean;
+pub use lean_to_string::program as lean_to_string;

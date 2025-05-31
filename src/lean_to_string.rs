@@ -1,7 +1,8 @@
 //! This module is responsible for converting definitions to Lean code.
 
-use crate::ast::{Definition, Proof, SetComprehension, Term};
+use crate::lean::{Definition, Proof, SetComprehension, Term};
 
+/*
 pub fn term(t: &Term) -> String {
     match t {
         Term::Number(n) => n.clone(),
@@ -33,3 +34,4 @@ pub fn definition(def: &Definition) -> Vec<String> {
 pub fn proof(proof: &Proof) -> Vec<String> {
     proof.definitions.iter().flat_map(definition).collect()
 }
+*/
