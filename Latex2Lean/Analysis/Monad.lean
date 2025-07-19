@@ -1,4 +1,4 @@
-import Latex2Lean.Node
+import Latex2Lean.Analysis.Basic
 import Std
 
 
@@ -12,16 +12,6 @@ as a `Set`.
 open Std (HashSet)
 
  
-structure AnalysisResult where
-  isFiniteSet : HashSet Node := {}
-  mustBeFiniteSet : HashSet Node := {}
-  deriving Repr, Inhabited
-
-
-abbrev AnalysisReaderT (m) [Monad m] := ReaderT AnalysisResult m
-abbrev AnalysisReaderM := AnalysisReaderT Id
-
-
 namespace AnalysisReaderT
 
 
@@ -39,7 +29,7 @@ def mustBeFiniteSet (node : Node) : AnalysisReaderT m Bool := do
   return result.mustBeFiniteSet.contains node
 
 
-def run (analysis : AnalysisResult) (action : AnalysisReaderT m α) : m α :=
+def run (analysis : Analysis) (action : AnalysisReaderT m α) : m α :=
   ReaderT.run action analysis
 
 
