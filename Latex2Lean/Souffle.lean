@@ -28,22 +28,32 @@ private def wslpath (path : FilePath) : IO String := do
   return output.trim
 
 
-def call : IO (Array Csv) := do
+def call (wsl := true) : IO (Array Csv) := do
   withTempDir λ dir => do
     let dir := dir.normalize
-    let dirString <- wslpath dir.toString
-    let output <- IO.Process.output {
-      cmd := "wsl",
-      args := #[
-        -- "--exec",   -- Execute a linux command directly
-        "bash",     -- That command should be bash
-        "--login",  -- In a login shell, more likely to have `souffle` as a command
-        "-c", s!"./makefile.py run \"--directory-output={dirString}\"", -- Run the makefile
-        -- TODO: Can the temporary directory have spaces in it? If so, we maybe
-        -- should handle that shit.
-      ],
-      cwd := some $ mkFilePath ["souffle-analysis"],
-    }
+    let output <- if wsl then
+      let dirString <- wslpath dir.toString
+      IO.Process.output {
+        cmd := "wsl",
+        args := #[
+          -- "--exec",   -- Execute a linux command directly
+          "bash",     -- That command should be bash
+          "--login",  -- In a login shell, more likely to have `souffle` as a command
+          "-c", s!"./makefile.py run \"--directory-output={dirString}\"", -- Run the makefile
+          -- TODO: Can the temporary directory have spaces in it? If so, we maybe
+          -- should handle that shit.
+        ],
+        cwd := some $ mkFilePath ["souffle-analysis"],
+      }
+    else
+      let dirString := dir.toString
+      IO.Process.output {
+        cmd := "bash",
+        args := #[
+          "-c", s!"./makefile.py run \"--directory-output={dirString}\"",
+        ],
+        cwd := some $ mkFilePath ["souffle-analysis"],
+      }
     if output.exitCode != 0 then
       throw $ IO.userError s!"
         Exit code: {output.exitCode}
@@ -58,4 +68,4 @@ def call : IO (Array Csv) := do
       let csv <- Csv.read name lines |> IO.ofExcept
       return csv
 
--- #eval call
+#eval call (wsl := false)
