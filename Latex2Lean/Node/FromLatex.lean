@@ -65,7 +65,7 @@ instance : MonadLift (Except BadLatex) Lean.CoreM where
     match except with
     | .ok x => return x
     | .error e => do
-      let f <- liftM $ Lean.PrettyPrinter.formatCategory `latex e
+      let f <- Lean.PrettyPrinter.ppCategory `latex e
       throwError s!"The syntax '{f}' is unsupported"
 
 
