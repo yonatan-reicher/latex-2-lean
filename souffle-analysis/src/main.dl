@@ -1,0 +1,125 @@
+#include "types.dl"
+
+/// The program
+.decl assumption(decl: Assumption)
+
+/// Expressions that appear in the program
+.decl expr(expr: Expr)
+expr(e) :- assumption([e]).
+expr(e) :- arg(e, _).
+/// Argument lists that appear in the program
+.decl args(list: ExprList, appears_in: Expr)
+args(args, [op, args]) :- expr([op, args]).
+/// Sub-lists 'args'
+.decl subargs(list: ExprList, appears_in: Expr)
+subargs(l, e) :- args(l, e).
+subargs(l, e) :- subargs([_, l], e).
+/// Expressions that appear in an argument list
+.decl arg(expr: Expr, appears_in: Expr)
+arg(e, a) :- subargs([e, _], a).
+/// Arguments and lists they belong to
+.decl arg_in(element: Expr, list: ExprList)
+arg_in(h, [h, t]) :- subargs([h, t], _).
+arg_in(x, [h, t]) :- subargs([h, t], _), arg_in(x, t).
+/// Lengths of argument lists
+.decl args_length(args: ExprList, length: number)
+args_length(args, length) :- subargs_length(args, length).
+.decl subargs_length(args: ExprList, length: number)
+subargs_length(nil, 0).
+subargs_length([ h, t ], l + 1) :-
+    subargs_length(t, l),
+    subargs([h, t], _).
+
+// TODO: We also want to expand this relation to include things that we have
+// their property that they are a finset in some way. Example:
+// A is finite, B is finite, and A ∩ B must be finite, then we need to choose?
+/// Is an expression used somewhere as a for-sure-finite set?
+/// E.g.  |D|
+.decl expr_must_be_finite_set(expr: Expr)
+expr_must_be_finite_set(expr) :- expr(`"abs"(expr)).
+expr_must_be_finite_set(left) :- expr_must_be_finite_set(`"union"(left, _)).
+expr_must_be_finite_set(right) :- expr_must_be_finite_set(`"union"(_, right)).
+// expr_must_be_finite_set(left) :-
+//     expr_must_be_finite_set(`"intersect"(left, right)),
+//     !expr_is_finite_set(right).
+// expr_must_be_finite_set(right) :-
+//     expr_must_be_finite_set(`"intersect"(left, right)),
+//     !expr_is_finite_set(left).
+expr_must_be_finite_set(expr) :-
+    assumption([ `"="(`name, expr) ]),
+    expr_must_be_finite_set(`name).
+
+/// Is an expression returning a finite set?
+.decl expr_is_finite_set(expr: Expr)
+expr_is_finite_set(["new-set", args]) :- expr(["new-set", args]).
+expr_is_finite_set(`"filter"(`"in"(name, set), cond)) :-
+    expr(`"filter"(`"in"(name, set), cond)),
+    expr_is_finite_set(set).
+.decl map_all_are_finite(expr: Expr, sets: ExprList)
+map_all_are_finite([ "map", args ], nil) :- expr(["map", args]).
+map_all_are_finite([ "map", args ], [ `"in"(var, set), rest ]) :-
+    map_all_are_finite([ "map", args ], rest),
+    subargs([ `"in"(var, set), rest ], [ "map", args ]),
+    expr_is_finite_set(set).
+expr_is_finite_set([ "map", [ cond, sets ] ]) :-
+    expr([ "map", [ cond, sets ] ]),
+    map_all_are_finite([ "map", [ cond, sets ] ], sets).
+expr_is_finite_set(`"range"(start, end)) :- expr(`"range"(start, end)).
+expr_is_finite_set(`"union"(left, right)) :-
+    expr(`"union"(left, right)),
+    expr_is_finite_set(left),
+    expr_is_finite_set(left).
+expr_is_finite_set(`"intersect"(left, right)) :-
+    expr(`"intersect"(left, right)),
+    ( expr_is_finite_set(left); expr_is_finite_set(right)).
+expr_is_finite_set(`name) :-
+    assumption([ `"="(`name, expr) ]),
+    expr_is_finite_set(expr).
+
+
+// Defining the program
+
+// These definitions are in soufflé syntax - they are preprocessed by the build
+// system!
+
+// H = { { <x, y>, <x + 1, y> } | x ∈ 0..8, y ∈ 0..9 }
+assumption([ `"="(`"H", `"map"(`"new-set"(`"new-tuple"(`"x", `"y"), `"new-tuple"(`"+"(`"x", `"1"), `"y")), `"in"(`"x", `"range"(`"0", `"8")), `"in"(`"y", `"range"(`"0", `"9")))) ]).
+// V = { { <x, y>, <x, y + 1> } | x ∈ 0..9, y ∈ 0..8 }
+assumption([ `"="(`"V", `"map"(`"new-set"(`"new-tuple"(`"x", `"y"), `"new-tuple"(`"x", `"+"(`"y", `"1"))), `"in"(`"x", `"range"(`"0", `"9")), `"in"(`"y", `"range"(`"0", `"8")))) ]).
+assumption([ `"in"(`"D", `"subset"(`"union"(`"H", `"V"))) ]).
+// The section "Assumptions"
+assumption([
+    `"forall"(
+        `"in"(`"d1", `"D"),
+        `"forall"(
+            `"in"(`"d2", `"D"),
+            `"="(`"intersect"(`"d1", `"d2"), `"new-set")
+        )
+    )
+]).
+assumption([
+    `"="(
+        `"filter"(`"p", `"in2"(`"p", `"D")),
+        `"cross"(`"range"(`"0", `"9"), `"range"(`"0", `"9"))
+    )
+]).
+
+assumption([ `"="(`"A", `"new-set"(`"1", `"2", `"3")) ]).
+assumption([ `"="(`"B", `"new-set"(`"abs"(`"A"))) ]).
+assumption([ `"="(`"C", `"filter"(`"X", `"A", `"in"(`"X", `"A"))) ]).
+// Assumption by contradiction
+assumption([ `"="(
+    `"abs"(`"intersect"(`"D", `"H")),
+    `"abs"(`"intersect"(`"D", `"V"))
+) ]).
+// TODO: Add 'expr' definitions for the things in the table in the original proof.
+
+.output expr_must_be_finite_set
+.output expr_is_finite_set
+
+
+.decl expr_must_be_but_isnt(expr: Expr)
+expr_must_be_but_isnt(expr) :-
+    expr_must_be_finite_set(expr),
+    !expr_is_finite_set(expr).
+.output expr_must_be_but_isnt

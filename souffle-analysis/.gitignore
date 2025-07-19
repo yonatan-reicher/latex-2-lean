@@ -1,0 +1,6 @@
+clean-preprocessor-output
+clean-preprocessor-output.exe
+functors.so
+__pycache__
+temp
+output.txt

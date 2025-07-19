@@ -42,7 +42,7 @@ def call : IO (Array Csv) := do
         -- TODO: Can the temporary directory have spaces in it? If so, we maybe
         -- should handle that shit.
       ],
-      cwd := some $ mkFilePath ["..", "latex-2-lean-2"],
+      cwd := some $ mkFilePath ["souffle-analysis"],
     }
     if output.exitCode != 0 then
       throw $ IO.userError s!"

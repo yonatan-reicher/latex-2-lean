@@ -1,0 +1,15 @@
+
+.type Assumption = [
+    expr: Expr
+]
+
+.type Expr = [
+    name: symbol,
+    args: ExprList
+]
+
+.type ExprList = [
+    head: Expr,
+    tail: ExprList
+]
+
