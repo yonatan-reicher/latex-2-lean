@@ -183,6 +183,7 @@ def doAssumption (a : Assumption) : AnalysisReaderT TermElabM Unit := do
     ]⟩⟩
   |>.run default
 
+/-
 #eval
   doAssumption
     ⟨⟨"=", [
@@ -196,5 +197,6 @@ def doAssumption (a : Assumption) : AnalysisReaderT TermElabM Unit := do
     isFiniteSet := { ⟨"anotherSet", []⟩ },
     mustBeFiniteSet := { ⟨"anotherSet", []⟩ },
   }
+-/
 
 #reduce ourSet
