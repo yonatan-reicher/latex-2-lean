@@ -4,14 +4,15 @@ import Latex2Lean.Latex.TextMode
 import Latex2Lean.Latex.MathToNode
 
 
-def LatexText.toAssumptions : LatexText -> Except BadLatex (List Assumption)
-  | `(latexText| $ $math:latexMath $) 
-  | `(latexText| $$ $math:latexMath $$) => do
+partial def LatexText.toAssumptions : LatexText -> Except BadLatex (List Assumption)
+  | `(latexText| $ $math:latexMath $ $rest) 
+  | `(latexText| $$ $math:latexMath $$ $rest) => do
     let math : LatexMath := math
+    let rest : LatexText := rest
     let node <- math.toNode
     let assumption := Assumption.mk node
     let isValid := assumption.toAssumptionKind.isOk
-    if isValid then return [assumption]
-    else return []
-  | `(latexText| notMath)
+    let toAdd := if isValid then [assumption] else []
+    return toAdd ++ (<-rest.toAssumptions)
+  | `(latexText| notMath $rest) => LatexText.toAssumptions rest
   | _ => return []

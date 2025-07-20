@@ -13,13 +13,7 @@ For now, the following definition will do:
 syntax notMath := ident
 
 
-syntax atom :=
-  (" $" latexMath " $ ")
-  -- TODO: There is a way to make this pretty-print with newlines
-  <|> (" $$ " latexMath " $$ ")
-  <|> notMath
-
-
-syntax atom+ : latexText
-
-
+syntax " $" latexMath " $ " latexText : latexText
+-- TODO: There is a way to make this pretty-print with newlines
+syntax " $$ " latexMath " $$ " latexText : latexText
+syntax notMath latexText : latexText
