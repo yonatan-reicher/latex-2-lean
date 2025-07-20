@@ -12,8 +12,10 @@ For now, the following definition will do:
 -/
 syntax notMath := ident
 
-
-syntax " $" latexMath " $ " latexText : latexText
+declare_syntax_cat latexTextAtom
+syntax " $" latexMath " $ " : latexTextAtom
 -- TODO: There is a way to make this pretty-print with newlines
-syntax " $$ " latexMath " $$ " latexText : latexText
-syntax notMath latexText : latexText
+syntax " $$ " latexMath " $$ " : latexTextAtom
+syntax notMath : latexTextAtom
+
+syntax latexTextAtom* : latexText
