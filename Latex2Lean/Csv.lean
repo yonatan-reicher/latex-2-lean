@@ -40,3 +40,8 @@ def read : FileName -> List String -> Except String Csv
   |> fun x => match x with
   | .ok { rows := #[ vec ], .. } => vec.toArray = #["[ hello, world ]", "2"]
   | _ => false
+
+
+/-- Note: ignores file name... obviously -/
+def write (csv : Csv) (delim := ", ") : Array String :=
+  csv.rows.map λ row => row.toList |> delim.intercalate
