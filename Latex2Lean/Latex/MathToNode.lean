@@ -32,13 +32,28 @@ instance : MonadLift (Except BadLatex) Lean.CoreM where
 /--
 Takes LaTeX math syntax as input, and returns the correct node or whatever
 -/
-partial def LatexMath.toNode : LatexMath -> Except BadLatex Node
+partial def LatexMath.toNode (x : LatexMath) : Except BadLatex Node :=
+  match x with
   | `(latexMath| $var:ident) => return ⟨identToString var, []⟩
   | `(latexMath| $n:num) => return ⟨numToString n, []⟩
+  | `(latexMath| \abs $set) => return ⟨"abs", [<- toNode set]⟩
+  | `(latexMath| {$x}) => toNode x
   | `(latexMath| \{ $args,* \}) => do
     let nodes <- args.getElems.mapM toNode
     return ⟨"new-set", nodes.toList⟩
-  | unknown => throw (.math unknown)
+  | `(latexMath| $lhs $op:latexMathBinOp $rhs) => do
+    -- TODO: Make this a different error
+    let some op := opStr op | throw (.math x)
+    return ⟨op, [<- toNode lhs, <- toNode rhs]⟩
+  | _ => throw (.math x)
+where
+  opStr
+    | `(latexMathBinOp|+) => some "+"
+    | `(latexMathBinOp|-) => some "-"
+    | `(latexMathBinOp|=) => some "="
+    | `(latexMathBinOp|\cap) => some "intersect"
+    | `(latexMathBinOp|\cup) => some "union"
+    | _ => none
 
 
 #eval show CoreM _ from do LatexMath.toNode (<- `(latexMath|\{\}))

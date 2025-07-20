@@ -79,6 +79,7 @@ def call (inputs : Array Csv) (wsl := true) : IO (Array Csv) := do
       let text <- readFile file.path
       let text := text.trim
       let lines := text.splitOn "\n"
+      let lines := if lines = [""] then [] else lines
       let csv <- Csv.read name lines |> IO.ofExcept
       return csv
 

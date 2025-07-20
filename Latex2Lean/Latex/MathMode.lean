@@ -14,9 +14,12 @@ syntax r" \cap " : latexMathBinOp
 syntax r" \cup " : latexMathBinOp
 syntax r" + " : latexMathBinOp
 syntax r" - " : latexMathBinOp
+syntax r" = " : latexMathBinOp
 syntax num : latexMath
 
 syntax ident : latexMath
+syntax "{" latexMath "}" : latexMath
+syntax r"\abs " latexMath : latexMath
 syntax r"\{ " latexMath,* r" \}" : latexMath
 syntax r"\{ " ident r" \in " latexMath r" \mid " latexMath r" \}" : latexMath
 syntax r"\{ " latexMath r" \mid " latexMath r" \}" : latexMath

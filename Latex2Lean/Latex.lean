@@ -47,10 +47,12 @@ def Latex.mathToNode (latexString : String) : Lean.CoreM Node := do
 Takes some LaTeX code in text mode and returns all the "assumptions" that could
 be read from it in a list.
 -/
-def Latex.toAssumptions (latexString : String) : Lean.CoreM (List Assumption) := do
+def Latex.toAssumptions (latexString : String)
+: Lean.CoreM (List Assumption × List Node) := do
   let env <- Lean.getEnv
   let stx := Lean.Parser.runParserCategory env `latexText latexString
   let stx <- Lean.ofExcept stx
   let stx : LatexText := TSyntax.mk stx
   let assumptions <- stx.toAssumptions
-  return assumptions
+  let nodes <- stx.toNodes
+  return (assumptions, nodes)

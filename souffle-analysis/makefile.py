@@ -61,7 +61,7 @@ def run_souffle(
 ) -> bool:
     directory_flag_value = f'"{directory_output}"' if directory_output else '-'
     return 0 == os.system(
-        f"souffle {file} -D {directory_flag_value} > {output}"
+        f"souffle {file} -D {directory_flag_value} -F {directory_flag_value} > {output}"
     )
 
 

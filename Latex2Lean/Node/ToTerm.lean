@@ -39,9 +39,11 @@ partial def Node.toTerm (term : Node)
     else ``( (($inner) : Set _) )
   | "union" => binOp term (fun l r => ``($l ∪ $r))
   | "intersect" => binOp term (fun l r => ``($l ∩ $r))
+  | "abs" => unaOp term (fun a => `(Finset.card $a))
   | var =>
     -- This must be the name of some variable
-    return Syntax.mkNameLit var
+    term.assert0Children
+    return Lean.mkIdent (.mkSimple var)
 where
   binOp
   (term : Node)
@@ -51,6 +53,13 @@ where
     let lhs <- lhs.toTerm
     let rhs <- rhs.toTerm
     op lhs rhs
+  unaOp
+  (term : Node)
+  (op : Term -> CoreM Term)
+  : AnalysisReaderT CoreM $ Except String Term := ExceptT.run do
+    let x <- term.assert1Children
+    let x <- x.toTerm
+    op x
 
 
 section

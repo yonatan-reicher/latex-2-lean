@@ -2,9 +2,11 @@
 
 /// The program
 .decl assumption(decl: Assumption)
+.input assumption
 
 /// Expressions that appear in the program
 .decl expr(expr: Expr)
+.input expr
 expr(e) :- assumption([e]).
 expr(e) :- arg(e, _).
 /// Argument lists that appear in the program
@@ -76,6 +78,7 @@ expr_is_finite_set(`name) :-
     assumption([ `"="(`name, expr) ]),
     expr_is_finite_set(expr).
 
+/*
 
 // Defining the program
 
@@ -113,6 +116,8 @@ assumption([ `"="(
     `"abs"(`"intersect"(`"D", `"V"))
 ) ]).
 // TODO: Add 'expr' definitions for the things in the table in the original proof.
+
+*/
 
 .output expr_must_be_finite_set
 .output expr_is_finite_set

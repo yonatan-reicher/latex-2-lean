@@ -12,6 +12,8 @@ code.
 -/
 def AnalysisResult.fromCsvs (data : List Csv)
 : Except String Analysis := do
+  dbg_trace repr data
+
   let csvNames :=
     data.map (·.fileName)
     -- WHY would someone name this INTERCALATE??
