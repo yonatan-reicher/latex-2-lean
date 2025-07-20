@@ -16,8 +16,8 @@ def AnalysisResult.fromCsvs (data : List Csv)
     data.map (·.fileName)
     -- WHY would someone name this INTERCALATE??
     |> String.intercalate ", "
-  let isFiniteSetCsvName := "isFiniteSet.csv"
-  let mustBeFiniteSetCsvName := "mustBeFiniteSet.csv"
+  let isFiniteSetCsvName := "expr_is_finite_set.csv"
+  let mustBeFiniteSetCsvName := "expr_must_be_finite_set.csv"
 
   -- Find the Csvs!
   let some isFiniteSetCsv :=
