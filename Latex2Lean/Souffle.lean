@@ -11,7 +11,13 @@ you want!
 
 open System (mkFilePath FilePath)
 open IO (println)
-open IO.FS (withTempDir readFile)
+open IO.FS (
+  withTempDir
+  readFile
+  writeFile
+)
+
+
 
 
 namespace Souffle
@@ -28,9 +34,16 @@ private def wslpath (path : FilePath) : IO String := do
   return output.trim
 
 
-def call (wsl := true) : IO (Array Csv) := do
+
+def call (inputs : Array Csv) (wsl := true) : IO (Array Csv) := do
   withTempDir λ dir => do
     let dir := dir.normalize
+    -- Prepare the inputs
+    for csv in inputs do
+      let path := dir / (csv.fileName.replace ".csv" "" ++ ".facts")
+      let toWrite := csv.write (delim := "\t") -- Inputs is Tab seperated
+      writeFile path ("\n".intercalate toWrite.toList)
+    -- Run the analysis
     let output <- if wsl then
       let dirString <- wslpath dir.toString
       IO.Process.output {
@@ -68,4 +81,5 @@ def call (wsl := true) : IO (Array Csv) := do
       let csv <- Csv.read name lines |> IO.ofExcept
       return csv
 
-#eval call (wsl := false)
+
+#eval call #[] (wsl := false)
