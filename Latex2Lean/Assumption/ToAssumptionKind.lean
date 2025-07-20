@@ -1,5 +1,6 @@
-import Latex2Lean.Node.Basic
+import Latex2Lean.Assumption.Basic
 import Latex2Lean.Node.Asserts
+import Latex2Lean.Node.Basic
 
 
 def Assumption.toAssumptionKind (a : Assumption) : Except String AssumptionKind

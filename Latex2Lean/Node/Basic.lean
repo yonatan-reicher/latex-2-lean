@@ -11,12 +11,3 @@ structure Node where
   name : String
   children : List Node
   deriving Repr, BEq, Inhabited, Hashable
-
-structure Assumption where
-  expr : Node
-  deriving Repr, BEq, Inhabited, Hashable
-
-
-inductive AssumptionKind
-  | eq (name : String) (value : Node)
-  deriving Repr, BEq, Inhabited
