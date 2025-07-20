@@ -10,7 +10,7 @@ private def decidable (p : Prop) [Decidable p] : Decidable p := inferInstance
 Reads the analysis results in the form of Csv files as outputed by our Souffle
 code.
 -/
-def readAnalysis (data : List Csv)
+def AnalysisResult.fromCsvs (data : List Csv)
 : Except String Analysis := do
   let csvNames :=
     data.map (·.fileName)
