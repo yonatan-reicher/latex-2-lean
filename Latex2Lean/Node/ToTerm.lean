@@ -2,6 +2,7 @@ import Latex2Lean.Analysis.Basic
 import Latex2Lean.Analysis.Monad
 import Latex2Lean.Node.Asserts
 import Latex2Lean.Node.Basic
+import Latex2Lean.Node.ToString
 import Latex2Lean.Except
 import Lean
 import Mathlib
@@ -55,15 +56,25 @@ where
 section
 
     
-macro "test " node:term " eq " stx:term : command =>
-  `(#eval return (<- ($node : Node).toTerm.run default) == Except.ok (<- $stx))
+open Lean Elab Term Command Meta in
+elab "test " node:term " eq " stx:term : command => do
+  let node <- liftTermElabM $ unsafe evalTerm Node (.const ``Node []) node
+  let term? <- liftCoreM $ node.toTerm.run default
+  let term <- Lean.ofExcept term?
+  liftTermElabM $ do
+    if not $ <- isDefEq (<- elabTerm term none) (<- elabTerm stx none) then
+      throwError
+        m!"Node '{node.toString}' should translate to '{stx}', but got '{term}' instead."
+  /-
+`(#eval return (<- ($node : Node).toTerm.run default) == Except.ok (<- $stx))
+-/
 
-test ⟨"2", []⟩ eq `(2)
+test ⟨"2", []⟩ eq 2
 #eval (Node.mk "+" []).toTerm.run default
-#eval (Node.mk "+" [Node.mk "1" [], Node.mk "2" []]).toTerm.run default
-#eval (Node.mk "new-set" [Node.mk "1" [], Node.mk "2" []]).toTerm default
-#eval (Node.mk "new-set" [Node.mk "1" [], Node.mk "2" []]).toTerm default
-#eval (Node.mk "union" [Node.mk "1" [], Node.mk "2" []]).toTerm default
+test ⟨"+", [⟨"1", []⟩, ⟨"2", []⟩]⟩ eq 1 + 2
+test ⟨"new-set", [⟨"1", []⟩, ⟨"2", []⟩]⟩ eq ({1, 2} : Set _)
+test ⟨"union", [⟨"new-set", [⟨"1", []⟩, ⟨"2", []⟩]⟩, ⟨"1", []⟩]⟩
+  eq (({1, 2} : Set _) ∪ 1)
 
 
 end
