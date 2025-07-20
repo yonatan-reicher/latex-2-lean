@@ -77,6 +77,7 @@ def call (inputs : Array Csv) (wsl := true) : IO (Array Csv) := do
     entries.mapM fun file => do
       let name := file.fileName
       let text <- readFile file.path
+      let text := text.trim
       let lines := text.splitOn "\n"
       let csv <- Csv.read name lines |> IO.ofExcept
       return csv
