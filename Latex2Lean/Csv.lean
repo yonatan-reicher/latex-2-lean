@@ -18,7 +18,8 @@ namespace Csv
 
 
 def read : FileName -> List String -> Except String Csv
-  | fileName, [] => throw s!"empty csv file '{fileName}'"
+  -- | fileName, [] => throw s!"empty csv file '{fileName}'"
+  | fileName, [] => return { n := 0, fileName := fileName, rows := #[] }
   | fileName, rows => do
     let rows := rows.toArray.map splitRow
     let sizes := rows.map (·.size) |> Std.HashSet.ofArray |>.toList
