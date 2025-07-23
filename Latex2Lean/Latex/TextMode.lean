@@ -13,7 +13,7 @@ For now, the following definition will do:
 syntax notMath := ident
 
 declare_syntax_cat latexTextAtom
-syntax " $" latexMath " $ " : latexTextAtom
+syntax " $ " latexMath " $ " : latexTextAtom
 -- TODO: There is a way to make this pretty-print with newlines
 syntax " $$ " latexMath " $$ " : latexTextAtom
 syntax notMath : latexTextAtom
