@@ -3,7 +3,13 @@ import Latex2Lean.Csv
 import Latex2Lean.Node.FromString
 
 
-private def decidable (p : Prop) [Decidable p] : Decidable p := inferInstance
+private def Csv.toSet (csv : Csv) : Except String $ Std.HashSet Node := do
+  if csv.rows.isEmpty then return ∅
+  if h : csv.n != 1 then throw s!"Csv file {csv.fileName} should have exactly one column, but has {csv.n} columns"
+  else
+    .ofArray <$> csv.rows.mapM fun row => 
+      let nodeStr := row[0]'(by grind only)
+      Node.fromString nodeStr
 
 
 /--
@@ -12,8 +18,6 @@ code.
 -/
 def AnalysisResult.fromCsvs (data : List Csv)
 : Except String Analysis := do
-  dbg_trace repr data
-
   let csvNames :=
     data.map (·.fileName)
     -- WHY would someone name this INTERCALATE??
@@ -29,27 +33,7 @@ def AnalysisResult.fromCsvs (data : List Csv)
     data.find? (·.fileName == mustBeFiniteSetCsvName)
     | throw s!"No CSV file named '{mustBeFiniteSetCsvName}'. Found only '{csvNames}'"
 
-  -- Matching on Decidable.isTrue let's us use these equality in tactics later
-  let isTrue _ := decidable (isFiniteSetCsv.n == 1)
-    | throw s!"CSV file '{isFiniteSetCsvName}' must have exactly one column, but has {isFiniteSetCsv.n} columns"
-  let isTrue _ := decidable (mustBeFiniteSetCsv.n == 1)
-    | throw s!"CSV file '{mustBeFiniteSetCsvName}' must have exactly one column, but has {mustBeFiniteSetCsv.n} columns"
-
-
-  let isFiniteSet :=
-    (<- isFiniteSetCsv.rows.mapM  fun row =>
-      let nodeStr := row[0]'(by grind only)
-      Node.fromString nodeStr
-    )
-    |> Std.HashSet.ofArray
-  let mustBeFiniteSet :=
-    (<- mustBeFiniteSetCsv.rows.mapM fun row =>
-      let nodeStr := row[0]'(by grind only)
-      Node.fromString nodeStr
-    )
-    |> Std.HashSet.ofArray
-
   return {
-    isFiniteSet := isFiniteSet
-    mustBeFiniteSet := mustBeFiniteSet
+    isFiniteSet := <- isFiniteSetCsv.toSet
+    mustBeFiniteSet := <- mustBeFiniteSetCsv.toSet
   }
