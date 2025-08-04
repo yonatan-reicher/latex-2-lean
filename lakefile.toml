@@ -11,5 +11,10 @@ autoImplicit = false
 name = "mathlib"
 scope = "leanprover-community"
 
+[[require]]
+name = "NessieParse"
+git = "https://github.com/yonatan-reicher/lean-nessie-parse.git"
+rev = "main"
+
 [[lean_lib]]
 name = "Latex2Lean"
