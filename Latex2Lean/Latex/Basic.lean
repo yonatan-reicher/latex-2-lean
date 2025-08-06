@@ -1,16 +1,21 @@
-import Lean
+import NessieParse
 
 
-open Lean (TSyntax)
+open NessieParse.Parser (CombineFail CombineManyFail)
 
 
-declare_syntax_cat latexText -- So hard not calling this `latext`
-declare_syntax_cat latexMath
+inductive Error
+| thereShouldBeAFormulaBetweenCurlyBraces
+| missingRightCurlyBrace
+deriving DecidableEq, Hashable, Inhabited, Repr
 
-abbrev LatexText := TSyntax `latexText
-abbrev LatexMath := TSyntax `latexMath
+
+structure Failure
+deriving DecidableEq, Hashable, Inhabited, Repr
+instance : CombineFail Failure Failure Failure where
+  combine _ _ := .mk
+instance : CombineManyFail Failure Failure where
+  combineMany _ := .mk
 
 
-inductive BadLatex where
-  | math (stx : LatexMath)
-  deriving Repr, Inhabited, BEq
+abbrev Parser α (E := Error) (F := Failure) := NessieParse.Parser α E F
