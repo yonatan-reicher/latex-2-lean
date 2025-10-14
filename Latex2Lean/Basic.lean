@@ -20,13 +20,15 @@ open Lean.Elab.Command (
 def defineLatex (latex : String) : CommandElabM Unit := do
   -- Read the assumptions from the input
                                             -- TODO rename this function huh?
-  let (assumptions, nodes) <- liftCoreM $ Latex.toAssumptions latex
+  let (assumptions, nodes) := match Latex.textToAssumptions latex with
+    | Except.ok (as, ns) => (as, ns)
+    | Except.error e => panic! s!"Error: {e}"
   let outputs <- liftIO $ Souffle.call (wsl := false) #[
     { fileName := "assumption.csv"
-      rows := assumptions.toArray.map (Vector.singleton ·.toString)
+      rows := assumptions.map (Vector.singleton ·.toString)
       n := _ },
     { fileName := "expr.csv"
-      rows := nodes.toArray.map (Vector.singleton ·.toString)
+      rows := nodes.map (Vector.singleton ·.toString)
       n := _ },
   ]
   let analysisResult <- Lean.ofExcept $ AnalysisResult.fromCsvs outputs.toList

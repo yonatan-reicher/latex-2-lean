@@ -3,7 +3,10 @@ import Latex2Lean.Node.Basic
 
 
 open NessieParse (ParserM)
-open NessieParse.Parser (letter charEq expectString skipWhitespace whitespace oneOf)
+open NessieParse.Parser (letter digit charEq expectString skipWhitespace whitespace oneOf)
+
+
+namespace Latex
 
 
 abbrev Name := String
@@ -14,6 +17,12 @@ def ignore {α} (_ : α) : Unit := ()
 
 def name : Parser Name :=
   letter.repeat1
+  |>.orFail default
+  |>.map String.mk
+
+
+def number : Parser String :=
+  digit.repeat1
   |>.orFail default
   |>.map String.mk
 
@@ -51,8 +60,12 @@ partial def mathMode (_ : Unit) : Parser Node := ParserM.run do
     |>.orFail default,
     -- {1 + 2}
     bracketed (),
+    -- x = 2
+    setVar (),
     -- x
     name.map (⟨·, []⟩),
+    -- 42
+    number.map (⟨·, []⟩),
     -- \αbs A
     abs (),
     -- \{ \}
@@ -61,6 +74,14 @@ partial def mathMode (_ : Unit) : Parser Node := ParserM.run do
     set (),
   ]
 where
+  setVar _ : Parser Node := ParserM.run do
+    let lhs <- name
+    skipWhitespace
+    charEq '=' |>.map ignore
+    skipWhitespace
+    let rhs <- mathMode () |>.orErr .shouldHaveFormulaAfterEq
+    let lhs := ⟨lhs, []⟩
+    return ⟨"=", [lhs, rhs]⟩
   bracketed _ : Parser Node := ParserM.run do
     charEq '{' |>.map ignore
     let inner <- mathMode () |>.orErr .thereShouldBeAFormulaBetweenCurlyBraces
@@ -89,7 +110,7 @@ where
       -- \{ .. \mid .. \}
       ParserM.run do
         commandEq "mid"
-        let rhs := mathMode ()
+        let _rhs := mathMode ()
         commandEq "}"
         panic! "TODO", -- TODO
       -- \{ a, b, c \}
@@ -107,20 +128,12 @@ where
     ]
 
 
+inductive Never
+def mathModeForSure : Parser Node (F := Never) :=
+  mathMode ()
+  |>.andThenFail fun .mk => panic! "todo" -- TODO
+
+
 #eval mathMode () |>.run (.ofString r"hello")
 #eval mathMode () |>.run (.ofString r"\{ \}")
 #eval mathMode () |>.run (.ofString r"\{ q, s, t \}")
-
-
-declare_syntax_cat latexMathBinOp
-syntax r" \cap " : latexMathBinOp
-syntax r" \cup " : latexMathBinOp
-syntax r" + " : latexMathBinOp
-syntax r" - " : latexMathBinOp
-syntax r" = " : latexMathBinOp
-syntax num : latexMath
-
-syntax r"\{ " latexMath,* r" \}" : latexMath
-syntax r"\{ " ident r" \in " latexMath r" \mid " latexMath r" \}" : latexMath
-syntax r"\{ " latexMath r" \mid " latexMath r" \}" : latexMath
-syntax latexMath latexMathBinOp latexMath : latexMath
