@@ -131,7 +131,8 @@ where
 inductive Never
 def mathModeForSure : Parser Node (F := Never) :=
   mathMode ()
-  |>.andThenFail fun .mk => panic! "todo" -- TODO
+  |>.orErr Error.notStartOfMathModeExpression 
+  -- |>.andThenFail fun .mk =>
 
 
 #eval mathMode () |>.run (.ofString r"hello")

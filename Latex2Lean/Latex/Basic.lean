@@ -11,6 +11,7 @@ inductive Error
 | thereShouldBeAFormulaBetweenCurlyBraces
 | missingRightCurlyBrace
 | shouldHaveFormulaAfterEq
+| notStartOfMathModeExpression
 deriving DecidableEq, Hashable, Inhabited, Repr
 
 
