@@ -22,7 +22,7 @@ def defineLatex (latex : String) : CommandElabM Unit := do
                                             -- TODO rename this function huh?
   let (assumptions, nodes) := match Latex.textToAssumptions latex with
     | Except.ok (as, ns) => (as, ns)
-    | Except.error e => panic! s!"Error: {e}"
+    | Except.error e => panic! s!"Error: {repr e}"
   let outputs <- liftIO $ Souffle.call (wsl := false) #[
     { fileName := "assumption.csv"
       rows := assumptions.map (Vector.singleton ·.toString)
@@ -39,7 +39,8 @@ def defineLatex (latex : String) : CommandElabM Unit := do
 
 
 #eval defineLatex r"
-Let $ H = \{1, 2, 3\} $. Can we know use it in Lean?
+Let $ H = \{1, 2\}$. Can we know use it in Lean?
+$ \abs H $
 "
 
 #print H

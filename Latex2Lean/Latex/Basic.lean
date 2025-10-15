@@ -7,11 +7,20 @@ open NessieParse.Parser (CombineFail CombineManyFail)
 namespace Latex
 
 
+def Pos := NessieParse.Pos
+deriving DecidableEq, Hashable, Inhabited
+
+
+instance : Repr Pos where
+  reprPrec pos _ := 
+    s!"[{pos.row}:{pos.col}]"
+
+
 inductive Error
-| thereShouldBeAFormulaBetweenCurlyBraces
-| missingRightCurlyBrace
-| shouldHaveFormulaAfterEq
-| notStartOfMathModeExpression
+| thereShouldBeAFormulaBetweenCurlyBraces (lhs /- rhs -/ : Pos)
+| missingRightCurlyBrace (start : Pos)
+| shouldHaveFormulaAfterEq (here : Pos)
+| notStartOfMathModeExpression (start /- _end -/ : Pos)
 deriving DecidableEq, Hashable, Inhabited, Repr
 
 
@@ -31,3 +40,7 @@ abbrev Parser α (E := Error) (F := Failure) := NessieParse.Parser α E F
 
 
 abbrev MathModeText := Substring
+
+
+def position {e f} : NessieParse.Parser Pos e f :=
+  NessieParse.Parser.state.map (·.pos)

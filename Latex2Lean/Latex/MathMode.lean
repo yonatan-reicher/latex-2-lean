@@ -86,15 +86,17 @@ where
     let lhs <- name
     skipWhitespace
     charEq '=' |>.map ignore
+    let here <- position
     skipWhitespace
-    let rhs <- mathMode () |>.orErr .shouldHaveFormulaAfterEq
+    let rhs <- mathMode () |>.orErr (.shouldHaveFormulaAfterEq here)
     let lhs := ⟨lhs, []⟩
     return ⟨"=", [lhs, rhs]⟩
   bracketed _ : Parser Node := ParserM.run do
+    let lhsCurly <- position
     charEq '{' |>.map ignore
-    let inner <- mathMode () |>.orErr .thereShouldBeAFormulaBetweenCurlyBraces
+    let inner <- mathMode () |>.orErr (.thereShouldBeAFormulaBetweenCurlyBraces lhsCurly)
     skipWhitespace
-    charEq '}' (F := Unit) |>.map ignore |>.orErr .missingRightCurlyBrace
+    charEq '}' (F := Unit) |>.map ignore |>.orErr (.missingRightCurlyBrace lhsCurly)
     return inner
   abs _ : Parser Node :=
     commandEq "abs"
@@ -137,9 +139,10 @@ where
 
 
 inductive Never
-def mathModeForSure : Parser Node (F := Never) :=
+def mathModeForSure : Parser Node (F := Never) := ParserM.run do
+  let here <- position
   mathMode ()
-  |>.orErr Error.notStartOfMathModeExpression 
+  |>.orErr (Error.notStartOfMathModeExpression here)
   -- |>.andThenFail fun .mk =>
 
 
