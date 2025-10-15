@@ -39,7 +39,7 @@ def defineLatex (latex : String) : CommandElabM Unit := do
 
 
 #eval defineLatex r"
-This is a file about $ H = \{1, 2, 3\} $ hello!
+Let $ H = \{1, 2, 3\} $. Can we know use it in Lean?
 "
 
 #print H
