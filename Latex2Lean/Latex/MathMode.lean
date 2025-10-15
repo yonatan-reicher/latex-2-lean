@@ -2,8 +2,16 @@ import Latex2Lean.Latex.Basic
 import Latex2Lean.Node.Basic
 
 
-open NessieParse (ParserM)
-open NessieParse.Parser (letter digit charEq expectString skipWhitespace whitespace oneOf)
+open NessieParse (ParserM Pos)
+open NessieParse.Parser (
+  charEq
+  digit
+  expectString
+  letter
+  oneOf
+  skipWhitespace
+  whitespace
+)
 
 
 namespace Latex
