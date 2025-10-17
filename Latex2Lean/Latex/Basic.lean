@@ -16,6 +16,12 @@ instance : Repr Pos where
     s!"[{pos.row}:{pos.col}]"
 
 
+instance : Add Pos where
+  add
+  | .mk o1 r1 c1, .mk o2 r2 c2 =>
+    .mk (o1 + o2) (r1 + r2 - 1) (c1 + c2 - 1)
+
+
 inductive Error
 | thereShouldBeAFormulaBetweenCurlyBraces (lhs /- rhs -/ : Pos)
 | missingRightCurlyBrace (start : Pos)
