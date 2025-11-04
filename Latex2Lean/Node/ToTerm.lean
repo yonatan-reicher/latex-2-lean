@@ -33,7 +33,7 @@ partial def Node.toTerm (term : Node)
   | "new-set" =>
     let children <- term.children.mapM toTerm
     let children : Syntax.TSepArray `term "," := .ofElems children.toArray
-    let inner <- ``({ $children:term,* })
+    let inner <- if children.elemsAndSeps.isEmpty then ``({}) else ``({ $children:term,* })
     let mustBeFiniteSet <- ExceptT.lift $ mustBeFiniteSet term
     if mustBeFiniteSet then ``( (($inner) : Finset _) )
     else ``( (($inner) : Set _) )
