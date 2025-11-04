@@ -20,9 +20,9 @@ open Lean.Elab.Command (
 def defineLatex (latex : String) : CommandElabM Unit := do
   -- Read the assumptions from the input
                                             -- TODO rename this function huh?
-  let (assumptions, nodes) := match Latex.textToAssumptions latex with
-    | Except.ok (as, ns) => (as, ns)
-    | Except.error e => panic! s!"Error: {repr e}"
+  let (assumptions, nodes) <- match Latex.textToAssumptions latex with
+    | Except.ok (as, ns) => pure (as, ns)
+    | Except.error e => throwError m!"Error: {repr e}"
   let outputs <- liftIO $ Souffle.call (wsl := false) #[
     { fileName := "assumption.csv"
       rows := assumptions.map (Vector.singleton ·.toString)
