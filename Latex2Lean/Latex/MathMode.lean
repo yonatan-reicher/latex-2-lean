@@ -76,6 +76,8 @@ partial def mathMode (_ : Unit) : Parser Node := ParserM.run do
     number.map (⟨·, []⟩),
     -- \αbs A
     abs (),
+    -- | A |
+    absWithPipes (),
     -- \{ \}
     emptySet (),
     -- \{ ... \}
@@ -105,14 +107,17 @@ where
       mathMode ()
       |>.orErr (panic! "aaaa") -- TODO
       |>.map fun inner => ⟨"abs", [inner]⟩
+  absWithPipes _ : Parser Node := ParserM.run do
+    charEq '|' |>.map ignore
+    let inner <- mathMode () |>.andThenFail fun _ => panic! "TODO"
+    charEq '|' (F := Unit) |>.map ignore |>.andThenFail fun _ => panic! "TODO"
+    return ⟨"abs", [inner]⟩
   emptySet _ : Parser Node := ParserM.run do
     commandEq "{"
     skipWhitespace
     commandEq "}"
     return ⟨"new-set", []⟩
   set _ : Parser Node := ParserM.run do
-    -- TODO: This won't work. Needs to special case-support this kind of thing.
-    -- That thing is commands with symbols in their name.
     commandEq "{"
     let lhs <- mathMode ()
     skipWhitespace
@@ -149,3 +154,4 @@ def mathModeForSure : Parser Node (F := Never) := ParserM.run do
 #eval mathMode () |>.run (.ofString r"hello")
 #eval mathMode () |>.run (.ofString r"\{ \}")
 #eval mathMode () |>.run (.ofString r"\{ q, s, t \}")
+#eval mathMode () |>.run (.ofString r"|\{ q, s, t \}|")
