@@ -12,7 +12,7 @@ namespace Latex
 
 
 private def endPos (s : Substring) : Pos :=
-  let parser := (NessieParse.Parser.char.map ignore).repeat0
+  let parser := (NessieParse.Parser.char.map (fun _ => ())).repeat0
   let initialState := NessieParse.State.ofString s.toString
   let output := parser.parse initialState (F := Never) (E := Never)
   match output with
@@ -43,3 +43,5 @@ where
       .missingRightCurlyBrace (addToPosition + p)
     | .thereShouldBeAFormulaBetweenCurlyBraces p =>
       .thereShouldBeAFormulaBetweenCurlyBraces (addToPosition + p)
+    | .expectedFormula p =>
+      .expectedFormula (addToPosition + p)

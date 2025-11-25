@@ -27,6 +27,7 @@ inductive Error
 | missingRightCurlyBrace (start : Pos)
 | shouldHaveFormulaAfterEq (here : Pos)
 | notStartOfMathModeExpression (start /- _end -/ : Pos)
+| expectedFormula (start : Pos)
 deriving DecidableEq, Hashable, Inhabited, Repr
 
 

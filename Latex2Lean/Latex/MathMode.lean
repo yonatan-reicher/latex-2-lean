@@ -63,7 +63,7 @@ def commandEq (name : Name) : Parser Unit :=
     commandStart.andThen λ() => symbolEq name
 
 
-partial def mathMode (_ : Unit) : Parser Node := ParserM.run do
+partial def atom (expr : Parser Node) : Parser Node := ParserM.run do
   skipWhitespace
   oneOf [
     -- emptyset
@@ -98,13 +98,13 @@ where
     charEq '='
     let here <- position
     skipWhitespace
-    let rhs <- mathMode () |>.orErr (.shouldHaveFormulaAfterEq here)
+    let rhs <- expr.orErr (.shouldHaveFormulaAfterEq here)
     let lhs := ⟨lhs, []⟩
     return ⟨"=", [lhs, rhs]⟩
   bracketed _ : Parser Node := ParserM.run do
     let lhsCurly <- position
     charEq '{'
-    let inner <- mathMode () |>.orErr (.thereShouldBeAFormulaBetweenCurlyBraces lhsCurly)
+    let inner <- expr.orErr (.thereShouldBeAFormulaBetweenCurlyBraces lhsCurly)
     skipWhitespace
     charEq '}' (F := Unit) |>.orErr (.missingRightCurlyBrace lhsCurly)
     return inner
@@ -112,12 +112,18 @@ where
     commandEq "abs"
     |>.orFail default
     |>.andThen fun () =>
-      mathMode ()
-      |>.orErr (panic! "aaaa") -- TODO
-      |>.map fun inner => ⟨"abs", [inner]⟩
+      position.andThen fun start =>
+        atom expr
+        |>.orErr (.expectedFormula start) -- TODO
+        |>.map fun inner => ⟨"abs", [inner]⟩
   absWithPipes _ : Parser Node := ParserM.run do
     charEq '|'
-    let inner <- mathMode () |>.andThenFail fun _ => panic! "TODO"
+    let inner <- expr.andThenFail fun _ => panic! "TODO"
+    -- BUG: This will never actually reach, because of having the pipe above. We
+    -- can either do this with a reader monad and propegating a configuration
+    -- that tells us when to disallow pipes for absolute, or we can just have an
+    -- atom that contains the piped-abosuluted and one that doesn't
+    -- TODO
     charEq '|' (F := Unit) |>.andThenFail fun _ => panic! "TODO"
     return ⟨"abs", [inner]⟩
   emptySet _ : Parser Node := ParserM.run do
@@ -156,13 +162,14 @@ where
     let lhs <- mathMode ()
     skipWhitespace
     oneOf [
-      -- \{ .. \mid .. \}
+      -- \set{ .. \mid .. }
       ParserM.run do
         commandEq "mid"
         let _rhs := mathMode ()
-        commandEq "}"
+        skipWhitespace
+        charEq '}'
         panic! "TODO", -- TODO
-      -- \{ a, b, c \}
+      -- \set{ a, b, c }
       ParserM.run do
         let rest <-
           (ParserM.run do
@@ -172,9 +179,16 @@ where
             return r
           ).repeat0
         let l := lhs :: rest
-        commandEq "}"
+        skipWhitespace
+        charEq '}'
         return ⟨"new-set", l⟩,
     ]
+
+
+def mathMode (_ : Unit) : Parser Node := ParserM.run do
+  let a <- atom
+  a
+
 
 
 inductive Never
