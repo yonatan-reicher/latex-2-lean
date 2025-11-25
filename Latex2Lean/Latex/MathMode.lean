@@ -133,13 +133,13 @@ where
     return ⟨"new-set", []⟩
   set _ : Parser Node := ParserM.run do
     commandEq "{"
-    let lhs <- mathMode ()
+    let lhs <- expr
     skipWhitespace
     oneOf [
       -- \{ .. \mid .. \}
       ParserM.run do
         commandEq "mid"
-        let _rhs := mathMode ()
+        let _rhs := expr
         commandEq "}"
         panic! "TODO", -- TODO
       -- \{ a, b, c \}
@@ -147,7 +147,7 @@ where
         let rest <-
           (ParserM.run do
             symbolEq ","
-            let r <- mathMode ()
+            let r <- expr
             skipWhitespace
             return r
           ).repeat0
@@ -159,13 +159,13 @@ where
     commandEq "set"
     skipWhitespace
     charEq '{'
-    let lhs <- mathMode ()
+    let lhs <- expr
     skipWhitespace
     oneOf [
       -- \set{ .. \mid .. }
       ParserM.run do
         commandEq "mid"
-        let _rhs := mathMode ()
+        let _rhs := expr
         skipWhitespace
         charEq '}'
         panic! "TODO", -- TODO
@@ -174,7 +174,7 @@ where
         let rest <-
           (ParserM.run do
             symbolEq ","
-            let r <- mathMode ()
+            let r <- expr
             skipWhitespace
             return r
           ).repeat0
@@ -185,21 +185,39 @@ where
     ]
 
 
-def mathMode (_ : Unit) : Parser Node := ParserM.run do
-  let a <- atom
-  a
+partial def expr (_ : Unit) : Parser Node := ParserM.run do
+  skipWhitespace
+  oneOf [
+    setVar (),
+    atom <| expr (),
+  ]
+where
+  setVar _ : Parser Node := ParserM.run do
+    let lhs <- name
+    skipWhitespace
+    charEq '='
+    let here <- position
+    skipWhitespace
+    let rhs <- expr () |>.orErr (.shouldHaveFormulaAfterEq here)
+    let lhs := ⟨lhs, []⟩
+    return ⟨"=", [lhs, rhs]⟩
+
+
+def mathMode : Parser Node := expr ()
 
 
 
 inductive Never
 def mathModeForSure : Parser Node (F := Never) := ParserM.run do
   let here <- position
-  mathMode ()
+  mathMode
   |>.orErr (Error.notStartOfMathModeExpression here)
   -- |>.andThenFail fun .mk =>
 
 
-#eval mathMode () |>.run (.ofString r"hello")
-#eval mathMode () |>.run (.ofString r"\{ \}")
-#eval mathMode () |>.run (.ofString r"\{ q, s, t \}")
-#eval mathMode () |>.run (.ofString r"|\{ q, s, t \}|")
+/- Some tests
+#eval mathMode |>.run (.ofString r"hello")
+#eval mathMode |>.run (.ofString r"\{ \}")
+#eval mathMode |>.run (.ofString r"\{ q, s, t \}")
+#eval mathMode |>.run (.ofString r"|\{ q, s, t \}|")
+-/
