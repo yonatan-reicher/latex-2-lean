@@ -92,15 +92,6 @@ partial def atom (expr : Parser Node) : Parser Node := ParserM.run do
     setWithKeyword (),
   ]
 where
-  setVar _ : Parser Node := ParserM.run do
-    let lhs <- name
-    skipWhitespace
-    charEq '='
-    let here <- position
-    skipWhitespace
-    let rhs <- expr.orErr (.shouldHaveFormulaAfterEq here)
-    let lhs := ⟨lhs, []⟩
-    return ⟨"=", [lhs, rhs]⟩
   bracketed _ : Parser Node := ParserM.run do
     let lhsCurly <- position
     charEq '{'
