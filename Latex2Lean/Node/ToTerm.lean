@@ -23,7 +23,7 @@ partial def Node.toTerm (term : Node)
   if term.name.isNat then
     term.assert0Children
     return Syntax.mkNumLit term.name
-  -- Otherwise, it should be some operation
+  -- Otherwise, it should be some operation or a variable
   match term.name with
   | "+" =>
     let (lhs, rhs) <- term.assert2Children
@@ -40,10 +40,19 @@ partial def Node.toTerm (term : Node)
   | "union" => binOp term (fun l r => ``($l ∪ $r))
   | "intersect" => binOp term (fun l r => ``($l ∩ $r))
   | "abs" => unaOp term (fun a => `(Finset.card $a))
+  | "map" =>
+    -- TODO
+    -- What do I do from here?
   | var =>
-    -- This must be the name of some variable
-    term.assert0Children
-    return Lean.mkIdent (.mkSimple var)
+    match term.children with
+    | [] =>
+      -- This must be the name of some variable
+      return Lean.mkIdent (.mkSimple var) 
+    | _ =>
+      -- This is must have been an operation, which we haven't implemented a
+      -- translation to a term for.
+      let argsString := term.children.map (s!"* {·}") |> "\n".intercalate
+      panic! s!"Unimplemented operation {term.name}, given arguments {argsString}"
 where
   binOp
   (term : Node)

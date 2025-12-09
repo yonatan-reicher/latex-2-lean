@@ -74,8 +74,6 @@ partial def atom (expr : Parser Node) : Parser Node := ParserM.run do
     |>.orFail default,
     -- {1 + 2}
     bracketed (),
-    -- x = 2
-    setVar (),
     -- x
     name.map (⟨·, []⟩),
     -- 42
@@ -130,9 +128,10 @@ where
       -- \{ .. \mid .. \}
       ParserM.run do
         commandEq "mid"
-        let _rhs := expr
+        let rhs <- expr
+        skipWhitespace
         commandEq "}"
-        panic! "TODO", -- TODO
+        return ⟨"map", [lhs, rhs]⟩,
       -- \{ a, b, c \}
       ParserM.run do
         let rest <-
@@ -156,10 +155,10 @@ where
       -- \set{ .. \mid .. }
       ParserM.run do
         commandEq "mid"
-        let _rhs := expr
+        let rhs <- expr
         skipWhitespace
         charEq '}'
-        panic! "TODO", -- TODO
+        return ⟨"map", [lhs, rhs]⟩,
       -- \set{ a, b, c }
       ParserM.run do
         let rest <-
@@ -180,7 +179,7 @@ partial def expr (_ : Unit) : Parser Node := ParserM.run do
   skipWhitespace
   oneOf [
     setVar (),
-    atom <| expr (),
+    binaryExpr (),
   ]
 where
   setVar _ : Parser Node := ParserM.run do
@@ -192,6 +191,25 @@ where
     let rhs <- expr () |>.orErr (.shouldHaveFormulaAfterEq here)
     let lhs := ⟨lhs, []⟩
     return ⟨"=", [lhs, rhs]⟩
+  atom' _ := atom (expr ())
+  binaryExpr _ : Parser Node := ParserM.run do
+    let lhs <- atom' ()
+    skipWhitespace
+    let op <- binaryOperator.maybe
+    match op with
+    | some op =>
+      let rhs <- expr ()
+      return ⟨op, [lhs, rhs]⟩
+    | none =>
+      return lhs
+  symbolEq' s := symbolEq s |>.map fun () => s
+  binaryOperator : Parser String := ParserM.run do
+    oneOf [
+      symbolEq' "+",
+      symbolEq' "-",
+      symbolEq' "*",
+      symbolEq' "/",
+    ]
 
 
 def mathMode : Parser Node := expr ()
