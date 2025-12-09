@@ -89,6 +89,8 @@ elab "test " node:term " eq " stx:term : command => do
 -/
 
 test ⟨"2", []⟩ eq 2
+/-- info: Except.error "Wrong number of arguments to '+' - expected 2, got 0" -/
+#guard_msgs in
 #eval (Node.mk "+" []).toTerm.run default
 test ⟨"+", [⟨"1", []⟩, ⟨"2", []⟩]⟩ eq 1 + 2
 test ⟨"new-set", [⟨"1", []⟩, ⟨"2", []⟩]⟩ eq ({1, 2} : Set _)
