@@ -5,7 +5,7 @@ import Latex2Lean.Node.Basic
 import Latex2Lean.Node.ToString
 import Latex2Lean.Except
 import Lean
-import Mathlib
+import Mathlib.Data.Finset.Defs
 import Std
 
 

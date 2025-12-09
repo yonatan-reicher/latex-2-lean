@@ -5,7 +5,6 @@ import Latex2Lean.Latex
 import Latex2Lean.Node
 import Latex2Lean.Souffle
 import Lean
-import Mathlib
 import Std
 
 
