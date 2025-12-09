@@ -43,6 +43,7 @@ partial def Node.toTerm (term : Node)
   | "map" =>
     -- TODO
     -- What do I do from here?
+    throwThe String "unimplemented!"
   | var =>
     match term.children with
     | [] =>
