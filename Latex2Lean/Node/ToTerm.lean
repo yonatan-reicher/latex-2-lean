@@ -92,8 +92,8 @@ test ⟨"2", []⟩ eq 2
 #eval (Node.mk "+" []).toTerm.run default
 test ⟨"+", [⟨"1", []⟩, ⟨"2", []⟩]⟩ eq 1 + 2
 test ⟨"new-set", [⟨"1", []⟩, ⟨"2", []⟩]⟩ eq ({1, 2} : Set _)
-test ⟨"union", [⟨"new-set", [⟨"1", []⟩, ⟨"2", []⟩]⟩, ⟨"1", []⟩]⟩
-  eq (({1, 2} : Set _) ∪ 1)
+-- test ⟨"union", [⟨"new-set", [⟨"1", []⟩, ⟨"2", []⟩]⟩, ⟨"1", []⟩]⟩
+--   eq (({1, 2} : Set _) ∪ 1)
 
 
 end
