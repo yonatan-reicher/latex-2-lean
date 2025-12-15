@@ -45,7 +45,6 @@ def defineLatex (latex : String) : CommandElabM Unit := do
   let analysisResult <- Lean.ofExcept $ AnalysisResult.fromCsvs outputs.toList
   for a in assumptions do
     let c <- liftCoreM $ a.toCommand.run analysisResult
-    Lean.logInfo c
     elabCommand c
 
 
