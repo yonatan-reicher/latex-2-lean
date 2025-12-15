@@ -43,7 +43,9 @@ partial def Node.toTerm (term : Node)
   | "map" =>
     -- TODO
     -- What do I do from here?
-    throwThe String "unimplemented!"
+    -- panic! "unimplemented!"
+    binOp term fun l r =>
+      panic! s!"unimplemented {l} {r}"
   | var =>
     match term.children with
     | [] =>
