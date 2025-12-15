@@ -9,6 +9,6 @@ style. Spoiler: _You can't!_
 ---
 
 ### Definitions
-$H = \set{ \set{ \tup{x, y}, \tup{x + 1, y} } \mid x \in 0..8, y \in 0..9 }$  
-$V = \set{ \set{ \tup{x, y}, \tup{x, y + 1} } \mid x \in 0..9, y \in 0..8 }$  
-$D \subseteq H \cup V$
+$H = \set{ \set{ \set{x, y}, \set{x + 1, y} } \mid x \in \set{0,8} }$  
+$V = \set{ \set{ \set{x, y}, \set{x, y + 1} } \mid x \in \set{0,9} }$
+$D = H \cup V$

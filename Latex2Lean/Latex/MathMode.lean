@@ -63,6 +63,20 @@ def commandEq (name : Name) : Parser Unit :=
     commandStart.andThen λ() => symbolEq name
 
 
+inductive Never
+
+
+def separatedBy {α} (sep : Parser Unit) (p : Parser α (F := Never))
+: Parser (List α) (F := Never) :=
+  p
+  |>.mapFail nofun
+  |>.andThen (fun a =>
+    sep.andThen (fun _ => p |>.mapFail nofun)
+    |>.repeat0
+    |>.map (a :: ·)
+  )
+
+
 /--
 An atom.
 
@@ -99,6 +113,8 @@ partial def atom (expr : Parser Node) : Parser Node := ParserM.run do
     set (),
     -- \set{ ... }
     setWithKeyword (),
+    -- (x, y)
+    tup (),
   ]
 where
   bracketed _ : Parser Node := ParserM.run do
@@ -184,6 +200,19 @@ where
         charEq '}'
         return ⟨"new-set", l⟩,
     ]
+  tup _ : Parser Node := ParserM.run do
+    symbolEq "("
+    skipWhitespace
+    let children <- oneOf [
+      symbolEq ")" |>.map (fun _ => []),
+      separatedBy (ParserM.run do
+        skipWhitespace
+        charEq ','
+        skipWhitespace) (expr.andThenFail fun _ => panic! "")
+      |>.mapFail nofun
+    ]
+    return ⟨"tuple", children⟩
+
 
 
 /--
@@ -247,7 +276,6 @@ def mathMode : Parser Node := expr ()
 
 
 
-inductive Never
 def mathModeForSure : Parser Node (F := Never) := ParserM.run do
   let here <- position
   mathMode

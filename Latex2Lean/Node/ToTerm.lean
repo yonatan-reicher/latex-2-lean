@@ -32,6 +32,14 @@ partial def Node.toTerm (term : Node)
     let mustBeFiniteSet <- ExceptT.lift $ mustBeFiniteSet term
     if mustBeFiniteSet then ``( ($inner : Finset _) )
     else ``( ($inner : Set _) )
+  | "tuple" =>
+    let children <- term.children.mapM toTerm
+    match children with
+    | [] => ``( () )
+    | [_] => panic! "unsupported"
+    | h :: t =>
+      let t : Syntax.TSepArray `term "," := .ofElems t.toArray
+      ``( ($h:term, $t:term,*) )
   | "union" => binOp term (fun l r => ``($l ∪ $r))
   | "intersect" => binOp term (fun l r => ``($l ∩ $r))
   | "+" => binOp term fun l r => ``($l + $r)
