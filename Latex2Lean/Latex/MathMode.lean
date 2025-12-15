@@ -231,13 +231,15 @@ where
       symbolEq' "-",
       symbolEq' "*",
       symbolEq' "/",
+      commandEq' "notin",
+      commandEq' "in",
       commandEq' "subset",
       commandEq' "subseteq",
       commandEq' "supset",
       commandEq' "supseteq",
-      commandEq' "cap",
-      commandEq' "cup",
-      commandEq' "times",
+      commandEq "cap" |>.map fun _ => "intersect",
+      commandEq "cup" |>.map fun _ => "union",
+      commandEq' "times" |>.map fun _ => "cross",
     ]
 
 

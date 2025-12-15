@@ -25,27 +25,35 @@ partial def Node.toTerm (term : Node)
     return Syntax.mkNumLit term.name
   -- Otherwise, it should be some operation or a variable
   match term.name with
-  | "+" =>
-    let (lhs, rhs) <- term.assert2Children
-    let lhs : Term <- lhs.toTerm
-    let rhs : Term <- rhs.toTerm
-    ``($lhs + $rhs)
   | "new-set" =>
     let children <- term.children.mapM toTerm
     let children : Syntax.TSepArray `term "," := .ofElems children.toArray
     let inner <- if children.elemsAndSeps.isEmpty then ``({}) else ``({ $children:term,* })
     let mustBeFiniteSet <- ExceptT.lift $ mustBeFiniteSet term
-    if mustBeFiniteSet then ``( (($inner) : Finset _) )
-    else ``( (($inner) : Set _) )
+    if mustBeFiniteSet then ``( ($inner : Finset _) )
+    else ``( ($inner : Set _) )
   | "union" => binOp term (fun l r => ``($l ∪ $r))
   | "intersect" => binOp term (fun l r => ``($l ∩ $r))
+  | "+" => binOp term fun l r => ``($l + $r)
+  | "-" => binOp term fun l r => ``($l - $r)
+  | "*" => binOp term fun l r => ``($l * $r)
+  | "/" => binOp term fun l r => ``($l / $r)
+  | "in" => binOp term fun l r => ``($l ∈ $r)
+  | "notin" => binOp term fun l r => ``(¬ $l ∈ $r)
+  | "cross" => binOp term fun l r => ``($l × $r)
+  | "subseteq" => binOp term fun l r => ``($l ⊆ $r)
+  | "subset" => binOp term fun l r => ``($l ⊂ $r)
+  | "supseteq" => binOp term fun l r => ``($l ⊇ $r)
+  | "supset" => binOp term fun l r => ``($l ⊃ $r)
   | "abs" => unaOp term (fun a => `(Finset.card $a))
   | "map" =>
-    -- TODO
-    -- What do I do from here?
-    -- panic! "unimplemented!"
-    binOp term fun l r =>
-      panic! s!"unimplemented {l} {r}"
+    let (lhs, rhs) <- assert2Children term
+    let lhs <- lhs.toTerm
+    let (v, s) <- assert2Children rhs
+    assert0Children v
+    let v := Lean.mkIdent (.mkSimple v.name)
+    let s <- s.toTerm
+    ``( { $lhs:term | $v:ident ∈ $s:term } )
   | var =>
     match term.children with
     | [] =>
@@ -54,8 +62,8 @@ partial def Node.toTerm (term : Node)
     | _ =>
       -- This is must have been an operation, which we haven't implemented a
       -- translation to a term for.
-      let argsString := term.children.map (s!"* {·}") |> "\n".intercalate
-      panic! s!"Unimplemented operation {term.name}, given arguments {argsString}"
+      let argsString := term.children.map (s!"\n* {·}") |> "".intercalate
+      panic! s!"Unimplemented operation '{term.name}', given arguments {argsString}"
 where
   binOp
   (term : Node)
