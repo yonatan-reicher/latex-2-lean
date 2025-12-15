@@ -4,6 +4,10 @@ import Latex2Lean
 -- define_latex file "proof-adjusted.md"
 
 -- #eval defineLatexFromFile "proof-adjusted.md"
+define_latex r"$X = \{ x + 1 \mid x \in \set{ 1, 2, 3 } \}$"
+#print X
+
+def y := 2
 define_latex r##"
 # Proof for yuval's Domino Proof
 
@@ -16,7 +20,7 @@ style. Spoiler: _You can't!_
 ---
 
 ### Definitions
-$$
-H = \set{ \set{ \set{x, y}, \set{x + 1, y} } \mid 1 }
-$$
+$H = \set{ \set{ \set{x, y}, \set{x + 1, y} } \mid x \in \set{0,8} }$  
+$V = \set{ \set{ \set{x, y}, \set{x, y + 1} } \mid x \in \set{0,9} }$
+$D = H \cup V$
 "##
