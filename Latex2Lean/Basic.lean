@@ -7,7 +7,6 @@ Passes:
 3. Nodes → Souffle analysis
 4. Analysis → Lean terms
 5. Lean terms → CommandElabM
-
 -/
 
 import Latex2Lean.Analysis
