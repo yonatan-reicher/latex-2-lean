@@ -1,3 +1,15 @@
+/-
+This library translates latex-like code in text to definitions in lean.
+
+Passes:
+1. Text → Math mode texts (Areas of latex code)
+2. Math mode → Nodes and assumptions
+3. Nodes → Souffle analysis
+4. Analysis → Lean terms
+5. Lean terms → CommandElabM
+
+-/
+
 import Latex2Lean.Analysis
 import Latex2Lean.Assumption
 import Latex2Lean.Csv
