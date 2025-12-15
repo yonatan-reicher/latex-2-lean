@@ -31,7 +31,7 @@ private def getInside (delim : String) (text : Substring)
   return (outerLeft, innerLeft, innerRight, outerRight)
 
 
-#eval getInside "$" "text $ arstasrt $ world"
+#guard getInside "$" "text $ arstasrt $ world" = .some (5, 6, 16, 17)
 
 
 namespace Latex
