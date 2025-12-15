@@ -1,13 +1,10 @@
 import Latex2Lean
 
 
--- For some reason, no messages are printed? this is weird, because the given
--- file name does not refer to an actual file! so an exception is definitly
--- thrown inside. It's just not printed??
-define_latex file "proof"
+-- define_latex file "proof-adjusted.md"
 
 -- #eval defineLatexFromFile "proof-adjusted.md"
-#eval defineLatex r##"
+define_latex r##"
 # Proof for yuval's Domino Proof
 
 Puzzle: Can you cover a $10 \times 10$ board with 2 by 1 tiles, such that the

@@ -54,7 +54,7 @@ def defineLatexFromFile (fileName : System.FilePath) : CommandElabM Unit := do
   defineLatex s
 
 
-macro "define_latex " "file " lit:str : command => `(#eval defineLatex $lit)
+macro "define_latex " "file " lit:str : command => `(#eval defineLatexFromFile $lit)
 
 macro "define_latex " lit:str : command => `(#eval defineLatex $lit)
 
