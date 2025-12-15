@@ -39,8 +39,8 @@ def mathToNode (latexString : String) : M Node := do
   | .fail f _ => nomatch f
   | .error e _ => throw e
 
-#eval do Latex.mathToNode r"\{ 1, 2, \{ 1, 2 \} \}"
+-- #eval do Latex.mathToNode r"\{ 1, 2, \{ 1, 2 \} \}"
 
-#eval do Latex.textToNodes r"
-Hello mister $N = 42$ eyes.
-"
+-- #eval do Latex.textToNodes r"
+-- Hello mister $N = 42$ eyes.
+-- "
