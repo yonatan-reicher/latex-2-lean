@@ -13,7 +13,8 @@ namespace Latex
 
 
 /-!
-This file declares the `Latex.mathToNode` and `Latex.toAssumptions` functions.
+This file declares the `Latex.mathToNode` and `Latex.textToAssumptions`
+functions.
 
 Important to know that the parser does not actually support all of LaTeX. In
 fact, it doesn't even support a large subset of it.
@@ -29,6 +30,8 @@ instance {m} [Monad m] [Lean.MonadError m] : MonadLift M m where
 
 /--
 Takes a string of LaTeX in math mode and tries to return an appropriate node.
+
+The language is documented at Latex2Lean/Latex/MathMode.lean.
 -/
 def mathToNode (latexString : String) : M Node := do
   match Latex.mathModeForSure.parse $ .ofString latexString with

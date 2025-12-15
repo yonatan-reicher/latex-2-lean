@@ -63,6 +63,17 @@ def commandEq (name : Name) : Parser Unit :=
     commandStart.andThen λ() => symbolEq name
 
 
+/--
+An atom.
+
+Empty set - \emptyset / \varnothing / \{\}
+Brackets - {e} is the same as e
+Variables - x when x is in the context
+Numbers - 1 2 3
+Absolute - \abs A or |A| (Currently |A| is unsupported)
+Set - \{ 1, 2, \{ 3 \} \} or \set{ 1, 2, \set{ 3 } }
+Advanced sets - \{ x + 1 \mid x \in A \} or \set{ x \in A \mid -x \in A }
+-/
 partial def atom (expr : Parser Node) : Parser Node := ParserM.run do
   skipWhitespace
   oneOf [
@@ -175,6 +186,14 @@ where
     ]
 
 
+/--
+An expr.
+
+Supported expression:
+Atom - 123, { x + 1 }
+Setting a variable - x = \{ 1, 2, 3 \}
+Binary expression - x * y (no precedence yet, parenthesis always on the right)
+-/
 partial def expr (_ : Unit) : Parser Node := ParserM.run do
   skipWhitespace
   oneOf [
@@ -202,13 +221,23 @@ where
       return ⟨op, [lhs, rhs]⟩
     | none =>
       return lhs
+  /-- symbolEq s but also returns s. -/
   symbolEq' s := symbolEq s |>.map fun () => s
+  /-- commandEq s but also returns s. -/
+  commandEq' s := commandEq s |>.map fun () => s
   binaryOperator : Parser String := ParserM.run do
     oneOf [
       symbolEq' "+",
       symbolEq' "-",
       symbolEq' "*",
       symbolEq' "/",
+      commandEq' "subset",
+      commandEq' "subseteq",
+      commandEq' "supset",
+      commandEq' "supseteq",
+      commandEq' "cap",
+      commandEq' "cup",
+      commandEq' "times",
     ]
 
 
