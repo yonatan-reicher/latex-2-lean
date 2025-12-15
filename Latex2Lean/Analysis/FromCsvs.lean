@@ -3,6 +3,11 @@ import Latex2Lean.Csv
 import Latex2Lean.Node.FromString
 
 
+/-!
+Parsing the analysis information from a Csv file.
+-/
+
+
 private def Csv.toSet (csv : Csv) : Except String $ Std.HashSet Node := do
   if csv.rows.isEmpty then return ∅
   if h : csv.n != 1 then throw s!"Csv file {csv.fileName} should have exactly one column, but has {csv.n} columns"
