@@ -18,6 +18,13 @@ open Lean (
   Term
 )
 
+open Batteries.ExtendedBinder (
+  extBinder
+  extBinderCollection
+  extBinderParenthesized
+  extBinders
+)
+
 
 partial def Node.toTerm (term : Node)
 : AnalysisReaderT CoreM $ Except String Term := ExceptT.run do
@@ -57,13 +64,29 @@ partial def Node.toTerm (term : Node)
   | "supset" => binOp term fun l r => ``($l ⊃ $r)
   | "abs" => unaOp term (fun a => `(Finset.card $a))
   | "map" =>
-    let (lhs, rhs) <- assert2Children term
-    let lhs <- lhs.toTerm
-    let (v, s) <- assert2Children rhs
-    assert0Children v
-    let v := Lean.mkIdent (.mkSimple v.name)
-    let s <- s.toTerm
-    ``( { $lhs:term | $v:ident ∈ $s:term } )
+    match term.children with
+    | []  | [_] => panic! "bad"
+    | lhs :: rhs =>
+      -- The left-hand side is what is being returned for each element
+      let lhs <- lhs.toTerm
+      -- The right-had side is the "mappings" - a collection of things of the
+      -- form "x ∈ A".
+      let mappings : Array (Lean.Ident × Lean.Term) <-
+        rhs.toArray.mapM fun mapping => do
+          let (v, s) <- assert2Children mapping
+          assert0Children v
+          let v := Lean.mkIdent (.mkSimple v.name)
+          let s <- s.toTerm
+          return (v, s)
+      -- Translate to syntax
+      let binderList <-
+        mappings.mapM fun
+          | (v, s) => `(extBinderParenthesized| ($v:ident ∈ $s:term) )
+      -- Collect together
+      let binderCollection : TSyntax ``extBinderCollection <-
+        `(extBinderCollection| $binderList* )
+      let binders <- `(extBinders| $binderCollection:extBinderCollection )
+      ``( { $lhs:term | $binders:extBinders } )
   | var =>
     match term.children with
     | [] =>
