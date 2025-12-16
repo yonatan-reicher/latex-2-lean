@@ -6,6 +6,8 @@ import Latex2Lean.Node.ToString
 import Latex2Lean.Except
 import Lean
 import Mathlib.Data.Finset.Defs
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Set.Defs
 import Std
 
 
