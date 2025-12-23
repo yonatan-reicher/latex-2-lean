@@ -86,7 +86,9 @@ partial def Node.toTerm (term : Node)
       let binderCollection : TSyntax ``extBinderCollection <-
         `(extBinderCollection| $binderList* )
       let binders <- `(extBinders| $binderCollection:extBinderCollection )
-      ``( { $lhs:term | $binders:extBinders } )
+      let ret ← ``( { $lhs:term | $binders:extBinders } )
+      let mustBeFiniteSet <- ExceptT.lift $ mustBeFiniteSet term
+      if mustBeFiniteSet then ``( ($ret : Finset _) ) else return ret
   | var =>
     match term.children with
     | [] =>
