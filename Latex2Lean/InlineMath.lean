@@ -1,3 +1,6 @@
+import Latex2Lean.Pos
+
+
 namespace Latex2Lean.InlineMath
 
 
@@ -23,18 +26,18 @@ def all : Array Kind :=
     .doubleDollar,
   ]
 
-def parseFromPrefix : Array Char → Option Kind
+def parseFromPrefix : Subarray Char → Option Kind
   | array =>
-    if array[:2] == #['$', '$'] then .some .doubleDollar
-    else if array[:1] == #['$'] then .some .singleDollar
+    if array[:2].toArray == #['$', '$'] then .some .doubleDollar
+    else if array[:1].toArray == #['$'] then .some .singleDollar
     else .none
 
 end Kind
 
 
 structure Span where
-  leftDelimStart : Nat
-  rightDelimStart : Nat
-  start : Nat
+  leftDelimStart : Pos
+  rightDelimStart : Pos
+  start : Pos
   text : Array Char
   deriving Repr
