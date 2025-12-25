@@ -2,38 +2,32 @@ namespace Latex2Lean
 
 
 structure Pos where
-  line : Nat
+  row : Nat
   col : Nat
   deriving DecidableEq, Repr
 
 
-def Pos.initial : Pos where
-  line := 1
+namespace Pos
+
+
+def initial : Pos where
+  row := 1
   col := 1
 
 
 instance : Inhabited Pos where
-  default := Pos.initial
+  default := initial
 
 
-def Pos.toString : Pos → String
-  | { line, col } => s!"[{line}:{col}]"
+def toString : Pos → String
+  | { row, col, .. } => s!"[{row}:{col}]"
 instance : ToString Pos where
-  toString := Pos.toString
+  toString := toString
 
 
-structure Range where
-  left : Pos
-  right : Pos
-  deriving DecidableEq, Repr
+def advance : Char → Pos → Pos
+  | '\n', { row, .. } => { row := row + 1, col := 1 }
+  | _, { row, col, .. } => { row := row, col := col + 1 }
 
 
-def Range.toString : Range → String
-  | .mk (.mk l1 c1) (.mk l2 c2) =>
-    if l1 = l2
-    then s!"[{l1}:{c1}-{c2}]"
-    else s!"[{l1}-{l2}:{c1}-{c2}]"
-
-
-instance : ToString Range where
-  toString := Range.toString
+end Pos

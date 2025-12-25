@@ -3,6 +3,7 @@ import Latex2Lean.Basic
 import Latex2Lean.Util
 -- Types
 import Latex2Lean.Pos
+import Latex2Lean.Range
 import Latex2Lean.InlineMath
 import Latex2Lean.Token
 import Latex2Lean.Formula
