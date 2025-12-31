@@ -26,6 +26,32 @@ open Batteries.ExtendedBinder (
 )
 
 
+abbrev M := ExceptT String (AnalysisReaderT CoreM)
+
+
+private def mapToSetTerm
+  (func : Term) (mappings : Array (Lean.Ident × Lean.Term)) : M Term := do
+  -- Translate to syntax
+  let binderList <-
+    mappings.mapM fun
+      | (v, s) => `(extBinderParenthesized| ($v:ident ∈ $s:term) )
+  -- Collect together
+  let binderCollection : TSyntax ``extBinderCollection <-
+    `(extBinderCollection| $binderList* )
+  let binders <- `(extBinders| $binderCollection:extBinderCollection )
+  ``( { $func:term | $binders:extBinders } )
+
+private def mapToFinsetTerm
+  (func : Term) (mappings : Array (Lean.Ident × Term)) : M Term := do
+  let sets := mappings.map fun (_, s) => s
+  let vars := mappings.map fun (v, _) => v
+  let setsHead := sets[0]!
+  let setsTail := sets[1:]
+  let sets ← setsTail.foldlM (init := setsHead) fun acc s => ``($acc × $s)
+  let vars ← vars.foldlM (init := vars[0]!) fun acc v => ``( ($acc, $v) )
+  ``( Finset.image (fun y => $func:term) $sets:term )
+
+
 partial def Node.toTerm (term : Node)
 : AnalysisReaderT CoreM $ Except String Term := ExceptT.run do
   -- First check term's name for a number
@@ -38,8 +64,10 @@ partial def Node.toTerm (term : Node)
     let children <- term.children.mapM toTerm
     let children : Syntax.TSepArray `term "," := .ofElems children.toArray
     let inner <- if children.elemsAndSeps.isEmpty then ``({}) else ``({ $children:term,* })
-    let mustBeFiniteSet <- ExceptT.lift $ mustBeFiniteSet term
-    if mustBeFiniteSet then ``( ($inner : Finset _) )
+    -- let mustBeFiniteSet <- ExceptT.lift $ mustBeFiniteSet term
+    -- if mustBeFiniteSet then ``( ($inner : Finset _) )
+    let isFiniteSet <- ExceptT.lift $ isFiniteSet term
+    if isFiniteSet then ``( ($inner : Finset _) )
     else ``( ($inner : Set _) )
   | "tuple" =>
     let children <- term.children.mapM toTerm
@@ -78,17 +106,10 @@ partial def Node.toTerm (term : Node)
           let v := Lean.mkIdent (.mkSimple v.name)
           let s <- s.toTerm
           return (v, s)
-      -- Translate to syntax
-      let binderList <-
-        mappings.mapM fun
-          | (v, s) => `(extBinderParenthesized| ($v:ident ∈ $s:term) )
-      -- Collect together
-      let binderCollection : TSyntax ``extBinderCollection <-
-        `(extBinderCollection| $binderList* )
-      let binders <- `(extBinders| $binderCollection:extBinderCollection )
-      let ret ← ``( { $lhs:term | $binders:extBinders } )
       let mustBeFiniteSet <- ExceptT.lift $ mustBeFiniteSet term
-      if mustBeFiniteSet then ``( ($ret : Finset _) ) else return ret
+      if mustBeFiniteSet
+      then mapToFinsetTerm lhs mappings
+      else mapToSetTerm lhs mappings
   | var =>
     match term.children with
     | [] =>
