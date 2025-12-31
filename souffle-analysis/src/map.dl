@@ -33,7 +33,7 @@ map_all_sets_finite([ "map", [ cond, mappings ] ]) :-
 .decl map_finite_mappings(expr: Expr, mappings: ExprList)
 map_finite_mappings([ "map", [ cond, mappings ] ], nil) :-
     expr([ "map", [ cond, mappings ] ]).
-map_finite_mappings([ "map", [ cond, mappings ] ], [ h, t ]) :-
+map_finite_mappings([ "map", [ cond, mappings ] ], [ `"in"(l, r), t ]) :-
     map_finite_mappings([ "map", [ cond, mappings ] ], t),
-    map_submappings([ "map", [ cond, mappings ] ], [ h, t ]),
-    expr_is_finite_set(h).
+    map_submappings([ "map", [ cond, mappings ] ], [ `"in"(l, r), t ]),
+    expr_is_finite_set(r).
