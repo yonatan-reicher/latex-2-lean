@@ -32,15 +32,21 @@ required_shell_commands = [
 
 help_message = """
 USAGE:
-    python3 makefile.py [command]
+    python3 makefile.py [command] <flags>
 
 COMMANDS:
     help - This!
     run - Run the program.
-        If the flag `-po`/`--process-output` is given, the will be processed via
-        the preprocessing step (A little buggy).
+        If the flag `-po`/`--process-output` is given, the outupt will be
+        processed via the preprocessing step (A little buggy).
         If the flag `-do=<dir>`/`--directory-output=<dir>` is given, the output will
         be saved to a directory named `dir`.
+
+FLAGS:
+    -po / --process-output - Process the output via the preprocessing step.
+    -do=<dir> / --directory-output=<dir> - Save the output to directory `dir`.
+    -i=<name>:<string> - Input an input relation named `name` with contents `string`.
+    -o=<name> / --output=<name> - Save the output relation named `name` to a file.
 """.strip()
 
 
@@ -106,6 +112,8 @@ def is_help():
 
 def run_command(
     process_output: bool = False,
+    additional_inputs: dict[str, list[str]] = {},
+    additional_outputs: set[str] = {},
     directory_output: None | Path = None,
 ):
     with TemporaryDirectory() as temp_dir_name:
@@ -124,6 +132,14 @@ def run_command(
                 )
             print('Preprocessing Soufflé code')
             preprocess(src_dir, temp_dir_path)
+            for name in additional_outputs:
+                print(f'Adding output flag for relation {name}')
+                with (temp_dir_path / souffle_main).open('a') as f:
+                    f.write(f'\n.output {name}\n')
+            if len(additional_inputs) > 0:
+                print('Generating input files')
+                for name, contents in additional_inputs.items():
+                    (directory_output / f"{name}.facts").write_text('\n'.join(contents))
             print('Running Soufflé code')
             success = run_souffle(
                 temp_dir_path / souffle_main,
@@ -176,16 +192,51 @@ def get_directory_output_flag_value() -> None | Path:
         return path
 
 
+def parse_input_flags():
+    def is_flag(arg: str):
+        return arg.startswith('-i=') or arg.startswith('--input=')
+
+    def parse(flag: str):
+        content = flag[flag.index('=') + 1:]
+        try:
+            name, string = content.split(':', maxsplit=1)
+            string = string.splitlines()
+        except ValueError:
+            raise MyException(
+                "Input flag requires both a name and string separated by a colon. \n"
+                "Usage: -i=<name>:<string> or --input=<name>:<string> \n"
+            )
+        return (name, string)
+
+    return { k: v for k, v in [ parse(a) for a in argv if is_flag(a) ] }
+
+
+def parse_output_flags():
+    def is_flag(arg: str):
+        return arg.startswith('-o=') or arg.startswith('--output=')
+
+    def parse(flag: str):
+        content = flag[flag.index('=') + 1:]
+        return content
+
+    return { parse(a) for a in argv if is_flag(a) }
+
 
 def main():
     check_for_shell_commands()
+    # Help should be checked first
     if is_help():
         help_command()
-    elif argv[1] == 'run':
+        return
+    additional_inputs = parse_input_flags()
+    additional_outputs = parse_output_flags()
+    if argv[1] == 'run':
         process_output = '--process-output' in argv or '-po' in argv
         directory_output = get_directory_output_flag_value()
         run_command(
             process_output=process_output,
+            additional_inputs=additional_inputs,
+            additional_outputs=additional_outputs,
             directory_output=directory_output,
         )
     else:
