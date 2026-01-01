@@ -7,6 +7,12 @@ Missing definitions from standard types and some helpful helpers.
 deriving instance DecidableEq, BEq for Except
 
 
+instance {m} [Monad m] [Alternative m] : MonadLift Option m where
+  monadLift
+    | some a => pure a
+    | none => failure
+
+
 namespace String
 
 /--
