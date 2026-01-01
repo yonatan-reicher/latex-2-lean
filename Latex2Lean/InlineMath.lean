@@ -8,7 +8,7 @@ namespace Latex2Lean.InlineMath
 inductive Kind : Type
   | singleDollar
   | doubleDollar
-  deriving DecidableEq
+  deriving DecidableEq, Inhabited
 
 
 namespace Kind
