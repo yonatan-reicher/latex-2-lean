@@ -1,4 +1,5 @@
 import Latex2Lean.Pos
+import Latex2Lean.Range
 
 
 namespace Latex2Lean
