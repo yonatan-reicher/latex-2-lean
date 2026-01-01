@@ -57,3 +57,6 @@ def splitButParens (text : String) (delim : Char) (lParen rParen : Char)
   |> (. == #["hello", " [world, 2]", " 3"])
 
 end String
+
+
+abbrev ignore {α} (_ : α) : PUnit := ()
