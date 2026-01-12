@@ -67,5 +67,5 @@ private def span' : Text.T (Except Spanning.Error) (Array (Kind × Span)) := do
 
 
 def span (text : Subarray Char) : Except Spanning.Error (Array (Kind × Span)) :=
-  span'.run text
+  span'.run text Pos.initial 0
   |>.map fun (spans, _, _) => spans
