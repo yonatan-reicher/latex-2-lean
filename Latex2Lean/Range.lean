@@ -8,7 +8,7 @@ structure Range where
   left : Pos
   right : Pos
   -- TODO: left <= right
-  deriving DecidableEq, Repr
+  deriving DecidableEq, Repr, Inhabited
 
 
 namespace Range
