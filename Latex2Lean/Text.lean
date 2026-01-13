@@ -94,3 +94,13 @@ def T.run {α}
   : m (α × Pos × Index) :=
   t text pos idx
   |> Functor.map fun ((a, pos), idx) => (a, pos, idx)
+
+
+def T.run' {α}
+  (text : Text)
+  (pos : Pos)
+  (idx : Index)
+  (t : T m α)
+  : m α :=
+  t.run text pos idx
+  |> Functor.map fun (r, _, _) => r
