@@ -44,4 +44,4 @@ inductive Formula where
   | var (name : Array Char) (range : Range)
   | number (n : Nat) (range : Range)
   | binOp (left : Formula) (op : BinOp) (right : Formula)
-  deriving DecidableEq, Repr
+  deriving DecidableEq, Repr, Inhabited
