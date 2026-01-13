@@ -11,6 +11,7 @@ inductive Token.Kind
   /-- A word, but starts with a '\' -/
   | command (chars : Array Char)
   | number (number : Nat)
+  | error (chars : Array Char)
   deriving DecidableEq, Repr, Inhabited
 
 
