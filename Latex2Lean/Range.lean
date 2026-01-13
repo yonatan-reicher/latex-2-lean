@@ -23,3 +23,10 @@ def toString : Range → String
 
 instance : ToString Range where
   toString := Range.toString
+
+
+def merge (r1 r2 : Range) : Range :=
+  Range.mk (min r1.left r2.left) (max r1.right r2.right)
+
+instance : Union Range where
+  union := Range.merge
