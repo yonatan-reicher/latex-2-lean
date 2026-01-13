@@ -82,3 +82,12 @@ abbrev ignore {α} (_ : α) : PUnit := ()
 
 macro "unfold " id:ident* " in " term:term : term =>
   `(by unfold $(id)* at *; exact $(term))
+
+
+instance : Coe (Array Char) String where
+  coe chars := String.mk chars.toList
+instance : Coe String (Array Char) where
+  coe s := s.toList.toArray
+
+instance {α} : Coe (Array α) (Subarray α) where
+  coe arr := arr.toSubarray
