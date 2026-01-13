@@ -9,6 +9,10 @@ abbrev Text := Subarray Char
 abbrev Index := Nat
 
 
+instance : Coe String Text where
+  coe s := s.toList.toArray.toSubarray
+
+
 @[irreducible]
 def T m [Monad m] := ReaderT Text <| StateT Pos <| StateT Index <| m
 abbrev M := T Id
