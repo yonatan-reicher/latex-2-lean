@@ -79,3 +79,6 @@ end String
 
 
 abbrev ignore {α} (_ : α) : PUnit := ()
+
+macro "unfold " id:ident* " in " term:term : term =>
+  `(by unfold $(id)* at *; exact $(term))
