@@ -1,0 +1,34 @@
+                                     Tokens
+
+tokens ::= (\s*token)*\s*
+token ::= word | command | number | symbol | error
+word ::= \w+
+command ::= \\(\w|\d)+
+number ::= \d+
+symbol ::= [=+-*/(){},;] // and maybe some more
+error ::= \S+
+
+
+
+                                    Parsers
+
+expr ::= binaryExpr
+binaryExpr ::=
+  | atom ( binOp atom )*
+
+atom ::= 
+  | "\emptySet"
+  | "\varnothing"
+  | number ".."  number
+  | number
+  | "\abs" atom
+  | "{" expr "}"
+  | "\{" setInsides "\}"
+  | "\set" "{" setInsides "}"
+  | "(" ( expr "," )* expr ")"
+  | word // variable name
+
+setInsides ::=
+  | // empty set
+  | expr "\mid" ( expr "," )* expr // map
+  | ( expr "," )* expr // simple set
