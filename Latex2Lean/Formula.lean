@@ -45,3 +45,9 @@ inductive Formula where
   | number (n : Nat) (range : Range)
   | binOp (left : Formula) (op : BinOp) (right : Formula)
   deriving DecidableEq, Repr, Inhabited
+
+def Formula.range : Formula → Range
+  | .emptySet r => r
+  | .var _ r => r
+  | .number _ r => r
+  | .binOp l _ r => l.range ∪ r.range
