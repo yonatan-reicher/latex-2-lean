@@ -13,6 +13,19 @@ instance {m} [Monad m] [Alternative m] : MonadLift Option m where
     | none => failure
 
 
+section
+variable {ε : Type} {m : Type _ → Type _} {α : Type _} [Monad m] [Alternative m]
+
+def ExceptT.failure : ExceptT ε m α :=
+  show m (Except ε α) from Alternative.failure
+
+def ExceptT.orElse (x : ExceptT ε m α) (y : Unit → ExceptT ε m α) : ExceptT ε m α :=
+  show m (Except ε α) from x.run <|> (y ()).run
+
+instance : Alternative (ExceptT ε m) where
+  failure := ExceptT.failure
+  orElse x y := ExceptT.orElse x y
+
 namespace String
 
 /--
