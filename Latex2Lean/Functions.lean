@@ -35,10 +35,23 @@ def defineLatex text :=
   |> (fun e =>
     match e with
     | Except.ok e => e
-    | .error e => panic! ""
+    | .error e => panic! "aa"
   )
   |> Array.map (fun (inlineMathKind, s) => (inlineMathKind, lex s.text.toSubarray s.start))
   |> Array.map (fun (inlineMathKind, tokens) => parse inlineMathKind tokens.toSubarray)
+
+#eval defineLatex "This is some text with inline math $x + y = z$."
+#eval
+  "arstarsta   $x = 2$"
+  |> Input.str
+  |> Array.toSubarray
+  |> span
+  |> (fun
+    | Except.ok e => e
+    | .error e => panic! "aa"
+  )
+
+end Latex2Lean
 
 
 /-

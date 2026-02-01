@@ -1,3 +1,4 @@
+import Latex2Lean.Util
 import Latex2Lean.Pos
 import Latex2Lean.InlineMath
 import Latex2Lean.Text
@@ -17,8 +18,17 @@ open InlineMath ( Kind Span )
 
 private def getKind : Text.T Option Kind := do
   let kind ← Kind.parseFromPrefix (←Text.T.rest)
-  for _ in [:kind.toString.length] do Text.T.advance
+  -- for _ in [:kind.toString.length] do Text.T.advance
+  -- This doesn't work due to a compiler bug.
+  let mut n := kind.toString.length
+  repeat do
+    Text.T.advance
+    n := n - 1
+  until n = 0
   return kind
+
+#guard getKind.run "x + y" Pos.initial 0 = .none
+#guard getKind.run "$x + y$" Pos.initial 0 == .some (.singleDollar, ⟨1, 2⟩, 1)
 
 
 private partial def skipToNextKind : Text.T Option Kind := inner ()
@@ -43,6 +53,8 @@ private partial def skipToNextKindEq (k : Kind) : Text.T Option Pos := do
 
 inductive Spanning.Error
   | unmatchedDelim (kind : Kind) (pos : Pos)
+  deriving DecidableEq, BEq, Repr
+
 open Text.T in
 private def span' : Text.T (Except Spanning.Error) (Array (Kind × Span)) := do
   let mut spans := #[]
@@ -69,3 +81,9 @@ private def span' : Text.T (Except Spanning.Error) (Array (Kind × Span)) := do
 def span (text : Subarray Char) : Except Spanning.Error (Array (Kind × Span)) :=
   span'.run text Pos.initial 0
   |>.map fun (spans, _, _) => spans
+
+
+#guard span "hello" == .ok #[]
+#guard
+  span "hello $my sweet$ world"
+  == .ok #[(.singleDollar, ⟨⟨1, 1⟩, ⟨1, 16⟩, ⟨1, 8⟩, "my sweet"⟩)]

@@ -1,3 +1,4 @@
+import Latex2Lean.Util
 import Latex2Lean.Pos
 
 
@@ -8,7 +9,7 @@ namespace Latex2Lean.InlineMath
 inductive Kind : Type
   | singleDollar
   | doubleDollar
-  deriving DecidableEq, Inhabited
+  deriving DecidableEq, Inhabited, Repr
 
 
 namespace Kind
@@ -32,6 +33,10 @@ def parseFromPrefix : Subarray Char → Option Kind
     else if array[:1].toArray == #['$'] then .some .singleDollar
     else .none
 
+#guard parseFromPrefix "$$abc" = .some .doubleDollar
+#guard parseFromPrefix "$abc" = .some .singleDollar
+#guard parseFromPrefix "abc" = .none
+
 end Kind
 
 
@@ -40,4 +45,4 @@ structure Span where
   rightDelimStart : Pos
   start : Pos
   text : Array Char
-  deriving Repr
+  deriving Repr, DecidableEq
