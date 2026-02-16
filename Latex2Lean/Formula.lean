@@ -42,7 +42,7 @@ A formula object is an Abstact Syntax Tree of the code inside an inline-math
 section of our text.
 -/
 inductive Formula where
-  | emptySet (range : Range)
+  | emptySet (range : Range) -- TODO: Remove
   | var (name : Array Char) (range : Range)
   | number (n : Nat) (range : Range)
   | abs (inner : Formula) (range : Range)
