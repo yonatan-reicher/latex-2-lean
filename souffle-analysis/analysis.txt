@@ -1,0 +1,53 @@
+
+must_be_finite:
+
+ name = expr    must_be_finite(name)
+-------------------------------------
+       must_be_finite(expr)
+
+        abs x
+-----------------------
+  must_be_finite(x)
+
+       must_be_finite(left U right)
+----------------------------------------------
+ must_be_finite(left)   must_be_finite(right)
+
+
+ must_be_finite(left ∩ right)    NOT must_be_finite(right)
+-----------------------------------------------------------
+                 must_be_finite(left)
+
+ must_be_finite({ func | x₁ ∈ set₁, ‥, xₙ ∈ setₙ })
+----------------------------------------------------
+   must_be_finite(set₁)  ⋯  must_be_finite(setₙ)
+
+
+
+is_finite:
+
+ name = expr   is_finite(expr)
+-------------------------------
+       is_finite(name)
+
+--------------------------
+ is_finite(new-set(args))
+
+        is_finite(set)
+-------------------------------
+ is_finite({ x ∈ set | cond })
+
+     is_finite(set₁)  ⋯  is_finite(setₙ)
+-----------------------------------------------
+ is_finite({ func | x₁ ∈ set₁, ‥, xₙ ∈ setₙ })
+
+----------------------
+ is_finite(start‥end)
+
+ is_finite(left)    is_finite(right)
+-------------------------------------
+      is_finite(left U right)
+
+     is_finite(left)             is_finite(right)
+-------------------------   -------------------------
+ is_finite(left ∩ right)     is_finite(left ∩ right)

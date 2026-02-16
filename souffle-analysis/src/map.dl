@@ -1,0 +1,39 @@
+/// The sublists from the end of a mapping expression.
+.decl map_submappings(expr: Expr, submappings: ExprList)
+map_submappings([ "map", [ cond, mappings ] ], mappings) :-
+    expr([ "map", [ cond, mappings ] ]).
+map_submappings([ "map", [ cond, mappings ] ], t) :-
+    map_submappings([ "map", [ cond, mappings ] ], [ _, t ]).
+
+
+/// The mappings on which a map expression is mapping on
+.decl map_mapping(expr: Expr, mapping: Expr)
+map_mapping([ "map", [ cond, mappings ] ], mapping) :-
+    map_submappings([ "map", [ cond, mappings ] ], [ mapping, _ ]).
+
+/// The sets on which a map expression is mapping on
+.decl map_set(expr: Expr, set: Expr)
+map_set([ "map", args ], set) :-
+    map_mapping([ "map", args ], `"in"(_, set)).
+
+
+/// The finite sets on which a map expression is mapping on
+.decl map_finite_set(expr: Expr, set: Expr)
+map_finite_set([ "map", args ], set) :-
+    map_set([ "map", args ], set),
+    expr_is_finite_set(set).
+
+
+/// Mapping expressions that are mapping only over finite sets.
+.decl map_all_sets_finite(expr: Expr)
+map_all_sets_finite([ "map", [ cond, mappings ] ]) :-
+    expr([ "map", [ cond, mappings ] ]),
+    map_finite_mappings([ "map", [ cond, mappings ] ], mappings).
+
+.decl map_finite_mappings(expr: Expr, mappings: ExprList)
+map_finite_mappings([ "map", [ cond, mappings ] ], nil) :-
+    expr([ "map", [ cond, mappings ] ]).
+map_finite_mappings([ "map", [ cond, mappings ] ], [ `"in"(l, r), t ]) :-
+    map_finite_mappings([ "map", [ cond, mappings ] ], t),
+    map_submappings([ "map", [ cond, mappings ] ], [ `"in"(l, r), t ]),
+    expr_is_finite_set(r).

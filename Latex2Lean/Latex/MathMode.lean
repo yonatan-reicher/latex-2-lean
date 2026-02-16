@@ -63,18 +63,24 @@ def commandEq (name : Name) : Parser Unit :=
     commandStart.andThen λ() => symbolEq name
 
 
+def comma : Parser Unit :=
+  skipWhitespace.andThen fun _ =>
+    charEq ',' |>.andThen fun _ =>
+      skipWhitespace
+
+
 inductive Never
 
 
-def separatedBy {α} (sep : Parser Unit) (p : Parser α (F := Never))
-: Parser (List α) (F := Never) :=
+def separatedBy {α F} (sep : Parser Unit) (p : Parser α)
+: Parser (List α) (F := F) :=
   p
-  |>.mapFail nofun
   |>.andThen (fun a =>
-    sep.andThen (fun _ => p |>.mapFail nofun)
+    sep.andThen (fun _ => p |>.andThenFail fun _ => panic! "")
     |>.repeat0
     |>.map (a :: ·)
   )
+  |>.orRet []
 
 
 /--
@@ -101,6 +107,8 @@ partial def atom (expr : Parser Node) : Parser Node := ParserM.run do
     bracketed (),
     -- x
     name.map (⟨·, []⟩),
+    -- range
+    range (),
     -- 42
     number.map (⟨·, []⟩),
     -- \αbs A
@@ -111,8 +119,6 @@ partial def atom (expr : Parser Node) : Parser Node := ParserM.run do
     emptySet (),
     -- \{ ... \}
     set (),
-    -- \set{ ... }
-    setWithKeyword (),
     -- (x, y)
     tup (),
   ]
@@ -124,6 +130,17 @@ where
     skipWhitespace
     charEq '}' (F := Unit) |>.orErr (.missingRightCurlyBrace lhsCurly)
     return inner
+  range _ : Parser Node := ParserM.run do
+    let lhs <- number
+    skipWhitespace
+    symbolEq ".."
+    skipWhitespace
+    let rhs <- number |>.andThenFail fun _ => panic! ""
+    let lhs := String.toNat? lhs |>.get!
+    let rhs := String.toNat? rhs |>.get!
+    let a := min lhs rhs
+    let b := max lhs rhs
+    return ⟨"new-set", List.range (b - a + 1) |>.map (· + a) |>.map (⟨toString ·, []⟩)⟩
   abs _ : Parser Node :=
     commandEq "abs"
     |>.orFail default
@@ -148,69 +165,47 @@ where
     commandEq "}"
     return ⟨"new-set", []⟩
   set _ : Parser Node := ParserM.run do
-    commandEq "{"
-    let lhs <- expr
+    -- Did we use `\set` or `\{`?
+    let usedKeyword <- oneOf [
+      commandEq "{" |>.map (fun _ => false),
+      ParserM.run do
+        commandEq "set"
+        skipWhitespace
+        charEq '{' (F := Unit)
+        |>.andThenFail fun _ => panic! ""
+        return true
+    ]
     skipWhitespace
-    oneOf [
+    let lhs <- expr |>.andThenFail fun _ => panic! ""
+    skipWhitespace
+    let ret <- oneOf [
       -- \{ .. \mid .. \}
       ParserM.run do
         commandEq "mid"
-        let rhs <- expr
         skipWhitespace
-        commandEq "}"
-        return ⟨"map", [lhs, rhs]⟩,
+        let rhs <- separatedBy comma expr
+        if rhs == [] then panic! ""
+        return ⟨"map", lhs :: rhs⟩,
       -- \{ a, b, c \}
       ParserM.run do
         let rest <-
           (ParserM.run do
-            symbolEq ","
-            let r <- expr
-            skipWhitespace
-            return r
+            comma
+            expr |>.andThenFail fun _ => panic! ""
           ).repeat0
-        let l := lhs :: rest
-        commandEq "}"
-        return ⟨"new-set", l⟩,
+        return ⟨"new-set", lhs :: rest⟩,
     ]
-  setWithKeyword _ : Parser Node := ParserM.run do
-    commandEq "set"
     skipWhitespace
-    charEq '{'
-    let lhs <- expr
-    skipWhitespace
-    oneOf [
-      -- \set{ .. \mid .. }
-      ParserM.run do
-        commandEq "mid"
-        let rhs <- expr
-        skipWhitespace
-        charEq '}'
-        return ⟨"map", [lhs, rhs]⟩,
-      -- \set{ a, b, c }
-      ParserM.run do
-        let rest <-
-          (ParserM.run do
-            symbolEq ","
-            let r <- expr
-            skipWhitespace
-            return r
-          ).repeat0
-        let l := lhs :: rest
-        skipWhitespace
-        charEq '}'
-        return ⟨"new-set", l⟩,
-    ]
+    if usedKeyword
+    then charEq '}' (F := Unit) |>.andThenFail fun _ => panic! ""
+    else commandEq "}" |>.andThenFail fun _ => panic! ""
+    return ret
   tup _ : Parser Node := ParserM.run do
-    symbolEq "("
+    charEq '('
     skipWhitespace
-    let children <- oneOf [
-      symbolEq ")" |>.map (fun _ => []),
-      separatedBy (ParserM.run do
-        skipWhitespace
-        charEq ','
-        skipWhitespace) (expr.andThenFail fun _ => panic! "")
-      |>.mapFail nofun
-    ]
+    let children <- separatedBy comma expr
+    skipWhitespace
+    charEq ')'
     return ⟨"tuple", children⟩
 
 

@@ -6,6 +6,8 @@ import Latex2Lean.Node.ToString
 import Latex2Lean.Except
 import Lean
 import Mathlib.Data.Finset.Defs
+import Mathlib.Data.Finset.Card
+import Mathlib.Data.Set.Defs
 import Std
 
 
@@ -15,6 +17,39 @@ open Lean (
   TSyntax
   Term
 )
+
+open Batteries.ExtendedBinder (
+  extBinder
+  extBinderCollection
+  extBinderParenthesized
+  extBinders
+)
+
+
+abbrev M := ExceptT String (AnalysisReaderT CoreM)
+
+
+private def mapToSetTerm
+  (func : Term) (mappings : Array (Lean.Ident × Lean.Term)) : M Term := do
+  -- Translate to syntax
+  let binderList <-
+    mappings.mapM fun
+      | (v, s) => `(extBinderParenthesized| ($v:ident ∈ $s:term) )
+  -- Collect together
+  let binderCollection : TSyntax ``extBinderCollection <-
+    `(extBinderCollection| $binderList* )
+  let binders <- `(extBinders| $binderCollection:extBinderCollection )
+  ``( { $func:term | $binders:extBinders } )
+
+private def mapToFinsetTerm
+  (func : Term) (mappings : Array (Lean.Ident × Term)) : M Term := do
+  let sets := mappings.map fun (_, s) => s
+  let vars := mappings.map fun (v, _) => v
+  let setsHead := sets[0]!
+  let setsTail := sets[1:]
+  let sets ← setsTail.foldlM (init := setsHead) fun acc s => ``($acc × $s)
+  let vars ← vars.foldlM (init := vars[0]!) fun acc v => ``( ($acc, $v) )
+  ``( Finset.image (fun y => $func:term) $sets:term )
 
 
 partial def Node.toTerm (term : Node)
@@ -29,8 +64,10 @@ partial def Node.toTerm (term : Node)
     let children <- term.children.mapM toTerm
     let children : Syntax.TSepArray `term "," := .ofElems children.toArray
     let inner <- if children.elemsAndSeps.isEmpty then ``({}) else ``({ $children:term,* })
-    let mustBeFiniteSet <- ExceptT.lift $ mustBeFiniteSet term
-    if mustBeFiniteSet then ``( ($inner : Finset _) )
+    -- let mustBeFiniteSet <- ExceptT.lift $ mustBeFiniteSet term
+    -- if mustBeFiniteSet then ``( ($inner : Finset _) )
+    let isFiniteSet <- ExceptT.lift $ isFiniteSet term
+    if isFiniteSet then ``( ($inner : Finset _) )
     else ``( ($inner : Set _) )
   | "tuple" =>
     let children <- term.children.mapM toTerm
@@ -55,13 +92,24 @@ partial def Node.toTerm (term : Node)
   | "supset" => binOp term fun l r => ``($l ⊃ $r)
   | "abs" => unaOp term (fun a => `(Finset.card $a))
   | "map" =>
-    let (lhs, rhs) <- assert2Children term
-    let lhs <- lhs.toTerm
-    let (v, s) <- assert2Children rhs
-    assert0Children v
-    let v := Lean.mkIdent (.mkSimple v.name)
-    let s <- s.toTerm
-    ``( { $lhs:term | $v:ident ∈ $s:term } )
+    match term.children with
+    | []  | [_] => panic! "bad"
+    | lhs :: rhs =>
+      -- The left-hand side is what is being returned for each element
+      let lhs <- lhs.toTerm
+      -- The right-had side is the "mappings" - a collection of things of the
+      -- form "x ∈ A".
+      let mappings : Array (Lean.Ident × Lean.Term) <-
+        rhs.toArray.mapM fun mapping => do
+          let (v, s) <- assert2Children mapping
+          assert0Children v
+          let v := Lean.mkIdent (.mkSimple v.name)
+          let s <- s.toTerm
+          return (v, s)
+      let mustBeFiniteSet <- ExceptT.lift $ mustBeFiniteSet term
+      if mustBeFiniteSet
+      then mapToFinsetTerm lhs mappings
+      else mapToSetTerm lhs mappings
   | var =>
     match term.children with
     | [] =>

@@ -1,4 +1,5 @@
 #include "types.dl"
+#include "map.dl"
 
 /// The program
 .decl assumption(decl: Assumption)
@@ -57,15 +58,7 @@ expr_is_finite_set(["new-set", args]) :- expr(["new-set", args]).
 expr_is_finite_set(`"filter"(`"in"(name, set), cond)) :-
     expr(`"filter"(`"in"(name, set), cond)),
     expr_is_finite_set(set).
-.decl map_all_are_finite(expr: Expr, sets: ExprList)
-map_all_are_finite([ "map", args ], nil) :- expr(["map", args]).
-map_all_are_finite([ "map", args ], [ `"in"(var, set), rest ]) :-
-    map_all_are_finite([ "map", args ], rest),
-    subargs([ `"in"(var, set), rest ], [ "map", args ]),
-    expr_is_finite_set(set).
-expr_is_finite_set([ "map", [ cond, sets ] ]) :-
-    expr([ "map", [ cond, sets ] ]),
-    map_all_are_finite([ "map", [ cond, sets ] ], sets).
+expr_is_finite_set([ "map", args ]) :- map_all_sets_finite([ "map", args ]).
 expr_is_finite_set(`"range"(start, end)) :- expr(`"range"(start, end)).
 expr_is_finite_set(`"union"(left, right)) :-
     expr(`"union"(left, right)),
