@@ -22,6 +22,8 @@ open IO.FS (
 
 namespace Souffle
 
+open Latex2Lean (Csv)
+
 
 /--
 This function calls the `wslpath` command to convert windows paths to WSL paths.
@@ -40,8 +42,8 @@ def call (inputs : Array Csv) (wsl := true) : IO (Array Csv) := do
     let dir := dir.normalize
     -- Prepare the inputs
     for csv in inputs do
-      let path := dir / (csv.fileName.replace ".csv" "" ++ ".facts")
-      let toWrite := csv.write (delim := "\t") -- Inputs is Tab seperated
+      let path := dir / (csv.fileName.toString.replace ".csv" "" ++ ".facts")
+      let toWrite := csv.toLines (delim := "\t") -- Inputs is Tab seperated
       writeFile path ("\n".intercalate toWrite.toList)
     -- Run the analysis
     let output <- if wsl then
