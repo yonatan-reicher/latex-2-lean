@@ -27,7 +27,7 @@ code.
 def AnalysisResult.fromCsvs (data : List Csv)
 : Except String Analysis := do
   let csvNames :=
-    data.map (·.fileName)
+    data.map (·.fileName.toString)
     -- WHY would someone name this INTERCALATE??
     |> String.intercalate ", "
   let isFiniteSetCsvName := "expr_is_finite_set.csv"
@@ -35,10 +35,10 @@ def AnalysisResult.fromCsvs (data : List Csv)
 
   -- Find the Csvs!
   let some isFiniteSetCsv :=
-    data.find? (·.fileName == isFiniteSetCsvName)
+    data.find? (·.fileName.toString == isFiniteSetCsvName)
     | throw s!"No CSV file named '{isFiniteSetCsvName}'. Found only '{csvNames}'"
   let some mustBeFiniteSetCsv :=
-    data.find? (·.fileName == mustBeFiniteSetCsvName)
+    data.find? (·.fileName.toString == mustBeFiniteSetCsvName)
     | throw s!"No CSV file named '{mustBeFiniteSetCsvName}'. Found only '{csvNames}'"
 
   return {
