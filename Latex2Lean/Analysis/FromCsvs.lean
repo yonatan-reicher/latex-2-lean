@@ -3,6 +3,9 @@ import Latex2Lean.Csv
 import Latex2Lean.Node.FromString
 
 
+namespace Latex2Lean
+
+
 /-!
 Parsing the analysis information from a Csv file.
 -/

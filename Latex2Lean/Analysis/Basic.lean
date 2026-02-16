@@ -1,11 +1,13 @@
-import Std
 import Latex2Lean.Node.Basic
+import Std
 
 /-!
 This file defines the analysis monad, which is a reader monad with the
 information about the static analysis we did to the mathematical expressions.
 -/
 
+
+namespace Latex2Lean
 
 
 open Std (HashSet)
