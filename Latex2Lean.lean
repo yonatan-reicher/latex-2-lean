@@ -19,7 +19,7 @@ import Latex2Lean.Spanning
 import Latex2Lean.Lexing
 import Latex2Lean.Parsing
 import Latex2Lean.Categorizing
--- import Latex2Lean.Analysing
+import Latex2Lean.Analysing
 -- import Latex2Lean.Translating
 -- import Latex2Lean.Emitting
 -- Final API
