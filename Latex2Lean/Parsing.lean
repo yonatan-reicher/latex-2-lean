@@ -55,6 +55,29 @@ def range : M Range := do
   | some t => return t.range
 
 
+private def setFromRange (a b : Nat) (r : Range) : Formula :=
+  let len := b - a
+  Array.range len
+  |>.map (· + a)
+  |>.map (.number · r)
+  |> (.simpleSet · r)
+
+
+private partial def commaSeparated
+(name : String) (inThing : String)
+{α} (p : T Option α)
+: M (Array α) := do
+  let start ← range
+  let some first ← p.maybe
+    | return #[]
+  if (← popEq (Token.Kind.symbol' ",") |>.maybe).isSome then
+    let some rest ← (commaSeparated name inThing p).maybe
+      | throw (start ∪ (←range), s!"Expected {name} after ',' in {inThing}")
+    return #[first] ++ rest
+  else
+    return #[first]
+
+
 mutual
 
 
@@ -90,14 +113,93 @@ private partial def binaryOperator : T Option BinOp := do
 private partial def atom : T Option Formula := do
   let t ← pop
   match t.kind with
-  | Token.Kind.number n => return .number n t.range
-  | Token.Kind.command' r"\emptySet"
-  | Token.Kind.command' r"\varnothing" => return .emptySet t.range
+  | Token.Kind.command' "emptySet"
+  | Token.Kind.command' "varnothing" => return .emptySet t.range
+  | Token.Kind.number n =>
+    (do
+      let t2 ← peek
+      popEq (Token.Kind.symbol' "..")
+      match ←pop.maybe with
+      | some { kind := Token.Kind.number m, range := r } =>
+        return setFromRange n m (t.range ∪ r)
+      | _ =>
+        throw (t.range ∪ t2.range, "Expected a number after '..'"))
+    <|> (do return .number n t.range)
+  | Token.Kind.command' "abs" =>
+    let some inner ← atom.maybe
+      | throw (t.range, r"Expected an expression atom after '\abs'")
+    return .abs inner (t.range ∪ inner.range)
+  | Token.Kind.symbol' "{" =>
+    let some inner ← expr.maybe
+      | throw (t.range, "Expected an expression inside '{ }' (Maybe you meant to
+        use '\\set{ }' for sets?)")
+    popEq (Token.Kind.symbol' "}")
+    <|> throw (t.range ∪ inner.range, "A '{' was not closed with an '}'")
+    return inner
+  | Token.Kind.command' "{" =>
+    let inner ← setInsides
+    let r := t.range ∪ (←range)
+    let inner := inner r
+    popEq (Token.Kind.command' "}")
+    <|> throw (r, r"A '\{' was not closed with an '\}'")
+    return inner
+  | Token.Kind.command' "set" =>
+    popEq (Token.Kind.symbol' "{")
+    <|> throw (t.range, r"Expected '{' after '\set'")
+    let inner ← setInsides
+    let r := t.range ∪ (←range)
+    popEq (Token.Kind.symbol' "}")
+    <|> throw (r, r"A '\set{' was not closed with a '}'")
+    return inner r
+  | Token.Kind.symbol' r"(" =>
+    let inner ← commaSeparated "an expression" "tuple" expr
+    let r := t.range ∪ (← range)
+    popEq (Token.Kind.symbol' ")")
+    <|> throw (r, r"A '(' was not closed with a ')'")
+    match h : inner.size with
+    | 0 => throw (r, r"Tuples cannot have zero elements")
+    | 1 => return inner[0]
+    | _ => return .tuple inner r
   | Token.Kind.word name => return .var name t.range
   -- TODO: Maybe we want to just return none?
   | Token.Kind.command c => throw (t.range, s!"Invalid command '{c}'")
   | Token.Kind.symbol s => throw (t.range, s!"Invalide symbol '{s}'")
   | Token.Kind.error s => throw (t.range, s!"Lexing error: {s}")
+
+
+private partial def setInsides : M (Range → Formula) := do
+  let some lhs ← expr.maybe
+    | return .emptySet
+  if (← popEq (Token.Kind.command' "mid") |>.maybe).isSome then
+    let rhs ← binders
+    if rhs.isEmpty then
+      throw (← range, r"Expected at least one binder after '\mid' in a set")
+    return .mapSet lhs rhs
+  else
+    if (← popEq (Token.Kind.symbol' ",") |>.maybe).isNone then
+      return Formula.simpleSet #[lhs]
+    let rest ← expressions
+    let all := #[lhs] ++ rest
+    return .simpleSet all
+where
+  expressions := commaSeparated "an expression" "set" expr
+  binders := commaSeparated "a binder" "set" binder
+
+
+private partial def binder : T Option Formula.Binder := do
+  let t ← pop
+  let Token.Kind.word name := t.kind
+    | failure
+  popEq (Token.Kind.command' "in")
+    <|> throw (t.range, r"Expected '\in' after binder variable name")
+  let some rhs ← expr.maybe
+    | throw (t.range ∪ (←range), r"Expected an expression after '\in' in a binder")
+  return .in_ name rhs
+
+-- setInsides ::=
+--   | // empty set
+--   | expr "\mid" ( expr "," )* expr // map
+--   | ( expr "," )* expr // simple set
 
 
 end
