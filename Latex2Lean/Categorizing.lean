@@ -6,7 +6,7 @@ import Latex2Lean.CategorizedFormula
 namespace Latex2Lean
 
 def categorize : Formula → CategorizedFormula
-  | .binOp (.var name ..) .eq right => .definition name right
+  | .binOp (.var name nameRange) .eq right => .definition name nameRange right
   | f@(.binOp _ .in_ _)
   | f@(.binOp _ .eq _) => .axiom_ f
   | f => .plain f
