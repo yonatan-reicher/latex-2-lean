@@ -8,7 +8,7 @@ import Latex2Lean.Input
 import Latex2Lean.Spanning
 import Latex2Lean.Lexing
 import Latex2Lean.Parsing
--- import Latex2Lean.Categorizing
+import Latex2Lean.Categorizing
 -- import Latex2Lean.Analysing
 -- import Latex2Lean.Translating
 -- import Latex2Lean.Emitting
@@ -29,18 +29,29 @@ namespace Latex2Lean
 
 def defineLatex text :=
   text
+  -- 1. Read the input
   |> Input.str
   |> Array.toSubarray
+  -- 2. Span the input into math spans
   |> span
   |> (fun e =>
     match e with
     | Except.ok e => e
     | .error e => panic! "aa"
   )
+  -- 3. Lex the math spans into tokens
   |> Array.map (fun (inlineMathKind, s) => (inlineMathKind, lex s.text.toSubarray s.start))
-  |> Array.map (fun (inlineMathKind, tokens) => parse inlineMathKind tokens.toSubarray)
+  -- 4. Parse the tokens into formulas
+  |> Array.mapM (fun (inlineMathKind, tokens) => parse inlineMathKind tokens.toSubarray)
+  |> (fun e =>
+    match e with
+    | Except.ok e => e
+    | .error e => panic! "aa"
+  )
+  -- 5. Categorize the formulas
+  |> Array.map categorize
 
-#eval defineLatex "This is some text with inline math $x + y = z$."
+#eval defineLatex "This is some text with inline math $(x + y) = z$."
 #eval
   "arstarsta   $x = 2$"
   |> Input.str

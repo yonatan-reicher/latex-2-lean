@@ -8,4 +8,4 @@ inductive CategorizedFormula where
   | definition (name : String) (rhs : Formula)
   | axiom_ (f : Formula)
   | plain (f : Formula)
-  deriving BEq
+  deriving BEq, Inhabited, Repr
