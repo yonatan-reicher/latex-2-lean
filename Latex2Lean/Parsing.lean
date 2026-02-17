@@ -8,7 +8,7 @@ namespace Latex2Lean
 
 
 def Error := Range × String
-deriving instance DecidableEq for Error
+deriving instance DecidableEq, Repr, BEq for Error
 
 def T m := StateT (Subarray Token) (ExceptT Error m)
 abbrev M := T Id
