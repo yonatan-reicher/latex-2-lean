@@ -12,6 +12,7 @@ import Latex2Lean.Categorizing
 import Latex2Lean.Analysing
 -- import Latex2Lean.Translating
 -- import Latex2Lean.Emitting
+
 import Lean
 import Std
 

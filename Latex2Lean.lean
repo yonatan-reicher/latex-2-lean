@@ -10,7 +10,7 @@ import Latex2Lean.Token
 import Latex2Lean.Formula
 import Latex2Lean.CategorizedFormula
 import Latex2Lean.Node
--- import Latex2Lean.Analysis
+import Latex2Lean.Analysis
 import Latex2Lean.Csv
 import Latex2Lean.LeanCmd
 -- The different stages of our process
