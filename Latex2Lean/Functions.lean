@@ -10,50 +10,42 @@ import Latex2Lean.Lexing
 import Latex2Lean.Parsing
 import Latex2Lean.Categorizing
 import Latex2Lean.Analysing
--- import Latex2Lean.Translating
--- import Latex2Lean.Emitting
-
-import Lean
-import Std
-
-
-open Lean.Elab.Command (
-  CommandElabM
-  elabCommand
-  liftCoreM
-  liftIO
-)
+import Latex2Lean.Translating
+import Latex2Lean.Emitting
 
 
 namespace Latex2Lean
 
+open Lean.Elab.Command (CommandElabM liftTermElabM)
 
-def defineLatex text :=
-  text
+
+def defineLatex (text : String) : CommandElabM Unit := do
   -- 1. Read the input
-  |> Input.str
-  |> Array.toSubarray
+  let input := Input.str text |> Array.toSubarray
   -- 2. Span the input into math spans
-  |> span
-  |> (fun e =>
-    match e with
-    | Except.ok e => e
-    | .error e => panic! "aa"
-  )
+  let spans ← span input
+    |>.mapError (fun e => m!"Error during spanning: {repr e}")
+    |> Lean.ofExcept
   -- 3. Lex the math spans into tokens
-  |> Array.map (fun (inlineMathKind, s) => (inlineMathKind, lex s.text.toSubarray s.start))
+  let tokens : Array (InlineMath.Kind × Array Token) := spans
+    |>.map fun (kind, s) => (kind, lex s.text s.start)
   -- 4. Parse the tokens into formulas
-  |> Array.mapM (fun (inlineMathKind, tokens) => parse inlineMathKind tokens.toSubarray)
-  |> (fun e =>
-    match e with
-    | Except.ok e => e
-    | .error e => panic! "aa"
-  )
+  let formulas : Array (InlineMath.Kind × Formula) ← tokens
+    |>.mapM (fun (kind, t) => return (kind, ← parse kind (t : Array Token)))
+    |>.mapError (fun e => m!"Error during parsing: {repr e}")
+    |> Lean.ofExcept
   -- 5. Categorize the formulas
-  |> Array.map categorize
+  let categorizedFormulas := formulas.map (Prod.map id categorize)
   -- 6. Analyze
-  |> analyze
+  let analysis ← analyze (categorizedFormulas.map Prod.snd)
+  -- 7. Translate to Lean commands
+  let commands : Array LeanCmd ← categorizedFormulas
+    |>.filterMapM (translate ·.2 analysis)
+    |> liftTermElabM
+  -- 8. Emit the Lean commands
+  commands.forM emit
 
+#eval defineLatex "This is some text with inline math $x = \\set{2}$. $\\abs x$"
 #eval defineLatex "This is some text with inline math $(x + y) = z$."
 #eval
   "arstarsta   $x = 2$"
