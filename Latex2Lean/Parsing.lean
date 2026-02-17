@@ -113,7 +113,7 @@ private partial def binaryOperator : T Option BinOp := do
 private partial def atom : T Option Formula := do
   let t ← pop
   match t.kind with
-  | Token.Kind.command' "emptySet"
+  | Token.Kind.command' "emptyset"
   | Token.Kind.command' "varnothing" => return .emptySet t.range
   | Token.Kind.number n =>
     (do
