@@ -20,7 +20,7 @@ open Lean.Elab.Command (
 )
 
 
-def emit : LeanCmd → CommandElabM Unit
+def emit : LeanCmd → TermElabM Unit
   | .def_ name e => do
     let e : Lean.Term ← liftTermElabM <| exprToSyntax e
     let c : Lean.Command ← `(def $(mkIdent name) := $e)

@@ -16,10 +16,10 @@ import Latex2Lean.Emitting
 
 namespace Latex2Lean
 
-open Lean.Elab.Command (CommandElabM liftTermElabM)
+open Lean.Elab.Term
 
 
-def defineLatex (text : String) : CommandElabM Unit := do
+def defineLatex (text : String) : TermElabM Unit := do
   -- 1. Read the input
   let input := Input.str text |> Array.toSubarray
   -- 2. Span the input into math spans
@@ -41,7 +41,6 @@ def defineLatex (text : String) : CommandElabM Unit := do
   -- 7. Translate to Lean commands
   let commands : Array LeanCmd ← categorizedFormulas
     |>.filterMapM (translate ·.2 analysis)
-    |> liftTermElabM
   -- 8. Emit the Lean commands
   commands.forM emit
 
