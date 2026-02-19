@@ -4,7 +4,8 @@ import Lean.PrettyPrinter
 
 namespace Latex2Lean
 
-open Lean.Meta
+open Lean (instantiateMVars)
+open Lean.Meta (inferType ppExpr)
 
 
 inductive LeanCmd where
@@ -15,6 +16,7 @@ inductive LeanCmd where
 
 def LeanCmd.prettyPrint : LeanCmd → Lean.MetaM String
   | .def_ name e => do
+    let e ← instantiateMVars e
     let typ ← inferType e
-    return s!"def {name} : {typ} := {← ppExpr e}"
-  | .axiom_ e => return s!"axiom {e}"
+    return s!"def {name} : {← ppExpr typ} := {← ppExpr e}"
+  | .axiom_ e => return s!"axiom {← ppExpr $ ← instantiateMVars e}"
