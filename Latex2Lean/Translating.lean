@@ -16,24 +16,9 @@ code.
 
 namespace Latex2Lean
 
-open Lean (
-  Expr
-  CoreM
-  MetaM
-  Syntax
-  TSyntax
-  Term
-  mkIdent
-  mkNatLit
-)
+open Lean
 open Lean.Meta
-open Lean.Elab.Term (
-  TermElabM
-  exprToSyntax
-  elabType
-  elabTermEnsuringType
-)
-
+open Lean.Elab.Term
 
 private abbrev CF := CategorizedFormula
 private abbrev F := Formula
@@ -57,7 +42,7 @@ private def mustBeFiniteSet (name : Name) : M Bool := do
   return mustBeFiniteSet.contains ⟨name, []⟩
 
 
-private def varToIdent (name : Name) : Lean.Ident := mkIdent (.mkSimple name)
+private def varToIdent (name : Name) : Ident := mkIdent (.mkSimple name)
 
 private def varToTerm (name : Name) : M Term := ``($(varToIdent name))
 
@@ -90,26 +75,17 @@ private partial def asNumber : F → M Expr
   | f => throwError s!"unsupported formula for translation to number: {repr f}"
 
 
-private partial def asFinset (f : F) : M Expr := do
-  let elementMVar ← mkFreshTypeMVar
-  let elementTerm ← exprToSyntax elementMVar
-  let finset ← elabType (← ``(Finset $elementTerm))
-  let stx ← toStx f
-  elabTermEnsuringType stx finset
-where
-  toStx
-    | .emptySet .. => ``(Finset.empty)
-    | .var name .. => return mkIdent (.mkSimple name)
+private partial def asFinset : F → M Expr
+    | .emptySet .. => mkAppM ``Finset.empty #[]
+    | .var name .. => varToExpr name
     | .number n .. => throwError s!"cannot translate number {n} into a finset"
-    | .abs .. => do
-      -- mkAppM ``Finset.card #[← asFinset inner]
-      throwError s!"cannot translate absolute value into a finset"
+    | .abs .. => throwError s!"cannot translate absolute value into a finset"
     -- | .binOp (left : Formula) (op : BinOp) (right : Formula)
     | .simpleSet elements .. => do
       let elements ← elements.mapM asWhatever
-      let array ← mkListLit (←mkFreshTypeMVar) elements.toList
-      let ret ← mkAppM ``List.toFinset #[array]
-      exprToSyntax ret
+      let list ← mkListLit (←mkFreshTypeMVar) elements.toList
+      check list
+      mkAppM ``List.toFinset #[list]
     -- | .mapSet (lhs : Formula) (binders : Array Formula.Binder) (range : Range)
     -- | .tuple (elements : Array Formula) (range : Range)
     | f => throwError s!"unsupported formula for translation to finset: {repr f}"
@@ -179,7 +155,7 @@ end
 
 /-- Translate a definition. Needs to decide the type to translate into. -/
 private def definition (name : Name) (f : F) : M LeanCmd := do
-  let leanName := Lean.Name.mkSimple name
+  let leanName := Name.mkSimple name
   if ← mustBeFiniteSet name
   then
     if ← isFiniteSet name
@@ -199,5 +175,5 @@ private def categorizedFormula : CF → M (Option LeanCmd)
   | .plain .. => return none
 
 
-def translate (f : CF) (a : Analysis) : Lean.Elab.TermElabM (Option LeanCmd) :=
+def translate (f : CF) (a : Analysis) : TermElabM (Option LeanCmd) :=
   categorizedFormula f a
