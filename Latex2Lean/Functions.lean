@@ -19,7 +19,7 @@ namespace Latex2Lean
 open Lean.Elab.Term
 
 
-def defineLatex (text : String) : TermElabM Unit := do
+def defineLatex (text : String) (verbose : Bool := false) : TermElabM Unit := do
   -- 1. Read the input
   let input := Input.str text |> Array.toSubarray
   -- 2. Span the input into math spans
@@ -42,6 +42,12 @@ def defineLatex (text : String) : TermElabM Unit := do
   let commands : Array LeanCmd ← categorizedFormulas
     |>.filterMapM (translate ·.2 analysis)
   -- 8. Emit the Lean commands
+  if verbose then
+    (← commands.mapM (·.prettyPrint))
+    |>.toList
+    |> "\n".intercalate
+    |> (m!"Emitted commands: \n{·}")
+    |> Lean.logInfo
   commands.forM emit
 
 #eval defineLatex "This is some text with inline math $x = \\set{2}$. $\\abs x$"
