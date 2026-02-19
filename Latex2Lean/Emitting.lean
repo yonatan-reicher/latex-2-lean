@@ -6,32 +6,29 @@ import Lean
 
 namespace Latex2Lean
 
-open Lean (
-  mkIdent
-)
-open Lean.Elab.Term (
-  exprToSyntax
-)
-open Lean.Elab.Command (
-  CommandElabM
-  liftTermElabM
-  liftCoreM
-  elabCommand
-)
-
+open Lean (addDecl instantiateMVars)
+open Lean.Meta (inferType)
+open Lean.Elab (TermElabM)
 
 def emit : LeanCmd → TermElabM Unit
   | .def_ name e => do
-    let e : Lean.Term ← liftTermElabM <| exprToSyntax e
-    let c : Lean.Command ← `(def $(mkIdent name) := $e)
-    elabCommand c
-    -- let decl := Lean.Declaration.defnDecl {
-    --   name := name,
-    --   levelParams := [],
-    --   type := ← liftTermElabM (Lean.Meta.inferType e),
-    --   value := e,
-    --   hints := default,
-    --   safety := .safe
-    -- }
-    -- liftCoreM (Lean.addDecl decl)
-  | .axiom_ e => panic! "a"
+    let e ← instantiateMVars e
+    let type <- inferType e
+    addDecl $ .defnDecl {
+      name := name
+      type := type
+      value := e
+      levelParams := []
+      hints := default -- TODO
+      safety := .safe
+    }
+  | .axiom_ e => do
+    let name ← Lean.Core.mkFreshUserName (.mkSimple "h")
+    let type ← inferType e
+    -- synthesizeSyntheticMVars
+    addDecl $ .axiomDecl {
+      name := name
+      type := type
+      levelParams := []
+      isUnsafe := false
+    }
