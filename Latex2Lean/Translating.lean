@@ -143,8 +143,12 @@ where
     elabType (← ``(Set $elementStx))
 
 
-private partial def asTuple (f : F) : M Expr :=
-  panic! "asTuple"
+private partial def asTuple : F → M Expr
+  | .var name .. => varToExpr name
+  | .tuple elements .. => do
+    let elements ← elements.mapM asWhatever
+    Prod.fst <$> mkProdMkN elements
+  | f => throwError s!"unsupported formula for translation to tuple: {repr f}"
 
 
 private partial def asWhatever (f : F) : M Expr :=
