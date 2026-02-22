@@ -54,6 +54,29 @@ private def empty (t : Option Expr) : M Expr := do
   elabTermEnsuringType (← ``(∅)) t
 
 
+/-- Taken from:
+https://github.com/leanprover/lean4/blob/985f350dcd18fc7814dfa677cac09933f44f3215/src/Lean/Meta/ProdN.lean#L42
+-/
+private def mkProdMkN (es : Array Expr) : MetaM (Expr × Expr) := do
+  if h : es.size > 0 then
+    let mut tuple := es.back
+    let mut tupleTy ← inferType tuple
+    let mut u ← getDecLevel tupleTy
+    let mut es := es.pop
+    for i in 0...es.size do
+      let e := es.back!
+      let ty ← inferType e
+      let u' ← getDecLevel ty
+      tuple := mkApp4 (mkConst ``Prod.mk [u', u]) ty tupleTy e tuple
+      tupleTy := mkApp2 (mkConst ``Prod [u', u]) ty tupleTy
+      u := (mkLevelMax u u').normalize
+      es := es.pop
+    return (tuple, tupleTy)
+  else
+    let u ← mkFreshLevelMVar
+    return (mkConst ``PUnit.unit [u], mkConst ``PUnit [u])
+
+
 mutual
 
 
