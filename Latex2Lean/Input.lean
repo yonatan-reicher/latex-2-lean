@@ -1,13 +1,21 @@
 import Latex2Lean.InlineMath
 
 
-namespace Latex2Lean.Input
+namespace Latex2Lean
+
+class Input α where
+  getInput : α → IO (Array Char)
 
 
-def file (path : System.FilePath) : IO (Array Char) := do
-  let str <- IO.FS.readFile path
-  return str.toList.toArray
+instance : Input (Array Char) where
+  getInput := pure
 
 
-def str (s : String) : Array Char :=
-  s.toList.toArray
+instance : Input String where
+  getInput s := pure s.toList.toArray
+
+
+instance : Input System.FilePath where
+  getInput path := do
+    let str <- IO.FS.readFile path
+    return str.toList.toArray
