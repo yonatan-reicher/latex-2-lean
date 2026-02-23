@@ -1,15 +1,17 @@
-import Latex2Lean.Parentheses
-import Std
+import Latex2Lean.Util
+import Std.Data.HashSet.Basic
 
 
-/-- Represents names of files -/
-abbrev FileName := String
+namespace Latex2Lean
 
 
-/-- A structure of the contents of some CSV file. -/
+open System ( FilePath )
+
+
+/-- A structure of the contents of some Csv file. -/
 structure Csv where
   {n : Nat}
-  fileName : FileName
+  fileName : FilePath
   rows : Array (Vector String n)
   deriving Repr, DecidableEq, Inhabited
 
@@ -17,7 +19,7 @@ structure Csv where
 namespace Csv
 
 
-def read : FileName -> List String -> Except String Csv
+def read : FilePath -> List String -> Except String Csv
   -- | fileName, [] => throw s!"empty csv file '{fileName}'"
   | fileName, [] => return { n := 0, fileName := fileName, rows := #[] }
   | fileName, rows => do
@@ -33,7 +35,7 @@ def read : FileName -> List String -> Except String Csv
   where
     splitRow : String -> Array String
     | row =>
-      row.splitButParens ','
+      row.splitButParens ',' '[' ']'
       |>.map (·.toString.trim)
 
 #guard
@@ -44,5 +46,5 @@ def read : FileName -> List String -> Except String Csv
 
 
 /-- Note: ignores file name... obviously -/
-def write (csv : Csv) (delim := ", ") : Array String :=
+def toLines (csv : Csv) (delim := ", ") : Array String :=
   csv.rows.map λ row => row.toList |> delim.intercalate

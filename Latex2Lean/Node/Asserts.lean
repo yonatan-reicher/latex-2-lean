@@ -1,7 +1,7 @@
 import Latex2Lean.Node.Basic
 
 
-namespace Node
+namespace Latex2Lean.Node
 
 
 def assert0Children (term : Node) : Except String Unit :=

@@ -1,4 +1,7 @@
 import Latex2Lean.Node.Basic
+
+
+namespace Latex2Lean.Node
  
 
 private def listToString : List String -> String
@@ -6,7 +9,7 @@ private def listToString : List String -> String
   | head :: tail => s!"[ {head}, {listToString tail} ]"
 
 
-def Node.toString : Node -> String
+def toString : Node -> String
   | { name, children } =>
     let childStrings := children.map toString
     s!"[ {name}, {listToString childStrings} ]"

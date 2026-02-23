@@ -9,9 +9,12 @@ as a `Set`.
 -/
 
 
+namespace Latex2Lean
+
+
 open Std (HashSet)
 
- 
+
 namespace AnalysisReaderT
 
 
