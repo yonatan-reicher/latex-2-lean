@@ -149,19 +149,17 @@ private partial def asNumber : F → M Expr
 
 
 private partial def asFinset : F → M Expr
-    | .emptySet .. => mkAppM ``Finset.empty #[]
-    | .var name .. => varToExpr name
-    | .number n .. => throwError s!"cannot translate number {n} into a finset"
-    | .abs .. => throwError s!"cannot translate absolute value into a finset"
-    -- | .binOp (left : Formula) (op : BinOp) (right : Formula)
-    | .simpleSet elements .. => do
-      let elements ← elements.mapM asWhatever
-      let list ← mkListLit (←mkFreshTypeMVar) elements.toList
-      check list
-      mkAppM ``List.toFinset #[list]
-    -- | .mapSet (lhs : Formula) (binders : Array Formula.Binder) (range : Range)
-    -- | .tuple (elements : Array Formula) (range : Range)
-    | f => throwError s!"unsupported formula for translation to finset: {repr f}"
+  | .emptySet .. => mkAppM ``Finset.empty #[]
+  | .var name .. => varToExpr name
+  | .number n .. => throwError s!"cannot translate number {n} into a finset"
+  | .abs .. => throwError s!"cannot translate absolute value into a finset"
+  -- | .binOp (left : Formula) (op : BinOp) (right : Formula)
+  | .simpleSet elements .. => do
+    let elements ← elements.mapM asWhatever
+    let list ← mkListLit (←mkFreshTypeMVar) elements.toList
+    check list
+    mkAppM ``List.toFinset #[list]
+  | f => throwError s!"unsupported formula for translation to finset: {repr f}"
 
 
 private partial def asSet : F → M Expr
