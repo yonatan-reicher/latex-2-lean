@@ -11,6 +11,7 @@ import Latex2Lean.Emitting
 
 namespace Latex2Lean
 
+open Lean (logInfo)
 open Lean.Elab.Term
 
 
@@ -34,16 +35,11 @@ def defineLatex {I} [Input I] (inp : I) (verbose : Bool := false)
   let categorizedFormulas := formulas.map (Prod.map id categorize)
   -- 6. Analyze
   let analysis ← analyze (categorizedFormulas.map Prod.snd)
-  -- 7. Translate to Lean commands
-  let commands : Array LeanCmd ← categorizedFormulas
-    |>.filterMapM (translate ·.2 analysis)
-  -- 8. Emit the Lean commands
-  if verbose then
-    (← commands.mapM (·.prettyPrint))
-    |>.toList
-    |> "\n".intercalate
-    |> (m!"Emitted commands: \n{·}")
-    |> Lean.logInfo
-  commands.forM emit
+  -- 7+8. Translate and immediately emit each command so that each definition
+  -- is in the environment before the next formula is translated.
+  for (_, cf) in categorizedFormulas do
+    let some cmd ← translate cf analysis | continue
+    if verbose then logInfo (← cmd.prettyPrint)
+    emit cmd
 
 end Latex2Lean
