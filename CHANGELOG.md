@@ -1,3 +1,4 @@
 - mapSet
 - symbols
 - \\{
+- imporove error messages

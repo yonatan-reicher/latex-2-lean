@@ -50,7 +50,8 @@ def defineLatex {I} [Input I] (inp : I) (verbose : Bool := false)
   -- 7+8. Translate and immediately emit each command so that each definition
   -- is in the environment before the next formula is translated.
   for (_, cf) in categorizedFormulas do
-    let some cmd ← translate cf analysis |> withExplainError "Error during translation" | continue
+    let some cmd ← translate cf analysis
+        |> withExplainError s!"Error translating formula '{cf.toFormula}'" | continue
     if verbose then logInfo (← cmd.prettyPrint)
     emit cmd |> withExplainError "Error during emission"
 

@@ -32,7 +32,7 @@ mutual
 partial def Formula.toNode : Formula → Node
   | .emptySet _ => ⟨"new-set", []⟩
   | .var name _ => ⟨String.mk name.toList, []⟩
-  | .number n _ => ⟨toString n, []⟩
+  | .number n _ => ⟨ToString.toString n, []⟩
   | .abs inner _ => ⟨"abs", [inner.toNode]⟩
   | .binOp left op right => ⟨op.toNodeName, [left.toNode, right.toNode]⟩
   | .simpleSet elements _ => ⟨"new-set", elements.toList.map toNode⟩

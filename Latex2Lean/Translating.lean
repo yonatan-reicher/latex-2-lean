@@ -145,7 +145,7 @@ private partial def asNumber : F → M Expr
       | .star => pure ``HMul.hMul
       | _ => throwError s!"unsupported binary operator for translation to number: {repr op}"
     mkAppM f #[leftExpr, rightExpr]
-  | f => throwError s!"unsupported formula for translation to number: {repr f}"
+  | f => throwError s!"unsupported formula for translation to number: {f}"
 
 
 private partial def asFinset : F → M Expr
@@ -181,7 +181,7 @@ private partial def asFinset : F → M Expr
       -- Return final expression
       mkAppM ``Finset.image $ (#[·, set]) $
         ← mkLambdaFVars #[fvar] $ ← asWhatever lhs
-  | f => throwError s!"unsupported formula for translation to finset: {repr f}"
+  | f => throwError s!"unsupported formula for translation to finset: {f}"
 
 
 private partial def asSet : F → M Expr
@@ -222,7 +222,7 @@ private partial def asSet : F → M Expr
             fun acc b => binderToExists b acc
           check pred
           return pred
-  | f => throwError s!"unsupported formula for translation to set: {repr f}"
+  | f => throwError s!"unsupported formula for translation to set: {f}"
 where
 
 
@@ -231,7 +231,7 @@ private partial def asTuple : F → M Expr
   | .tuple elements .. => do
     let elements ← elements.mapM asWhatever
     Prod.fst <$> mkProdMkN elements
-  | f => throwError s!"unsupported formula for translation to tuple: {repr f}"
+  | f => throwError s!"unsupported formula for translation to tuple: {f}"
 
 
 private partial def asWhatever (f : F) : M Expr :=
@@ -270,7 +270,7 @@ private def definition (name : Name) (f : F) : M LeanCmd := do
   then
     if ← isFiniteSet name
     then return .def_ leanName (← asFinset f)
-    else return panic!" tarstastarstat!!!!!!!! "
+    else throwError s!"'{Name.mkSimple name}' must be a Finset but could not be inferred as finite"
   else
     return .def_ leanName (← asWhatever f)
 

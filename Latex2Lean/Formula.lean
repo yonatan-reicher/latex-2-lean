@@ -1,3 +1,4 @@
+import Latex2Lean.Util
 import Latex2Lean.Pos
 import Latex2Lean.Range
 
@@ -85,3 +86,38 @@ def Formula.range : Formula → Range
   | .simpleSet _ r => r
   | .mapSet _ _ r => r
   | .tuple _ r => r
+
+
+mutual
+
+partial def Formula.toString : Formula → String
+  | .emptySet _ => "\\emptyset"
+  | .var name _ => s!"{show String from name}"
+  | .number n _ => s!"{n}"
+  | .abs inner _ => s!"\\abs {inner.toString}"
+  | .binOp left op right =>
+    s!"{left.toString} {op} {right.toString}"
+  | .simpleSet elements _ =>
+    ", ".intercalate (elements.toList.map Formula.toString)
+    |> (s!"\\\{ {·} \\}")
+  | .mapSet lhs binders _ =>
+    s!"\\\{ {lhs.toString} \\mid {", ".intercalate (binders.toList.map Formula.Binder.toString)} \\}"
+  | .tuple elements _ =>
+    s!"({", ".intercalate (elements.toList.map Formula.toString)})"
+
+partial def Formula.Binder.toString : Formula.Binder → String
+  | .in_ name set => s!"{show String from name} \\in {set.toString}"
+
+end
+
+instance : ToString Formula := ⟨Formula.toString⟩
+instance : ToString Formula.Binder := ⟨Formula.Binder.toString⟩
+
+#guard
+  Formula.mapSet
+    (.binOp (.var "x" default) .plus (.number 1 default))
+    #[.in_ "x" $ .emptySet default
+    , .in_ "y" $ .simpleSet #[.number 5 default] default]
+    default
+  |>.toString
+  |> (· == r"\{ x + 1 \mid x \in \emptyset, y \in \{ 5 \} \}")
