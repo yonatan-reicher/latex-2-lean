@@ -248,11 +248,3 @@ private def categorizedFormula : CF → M (Option LeanCmd)
 
 def translate (f : CF) (a : Analysis) : TermElabM (Option LeanCmd) :=
   categorizedFormula f a
-
-def y : Set Nat := {1}
-def z : Set Nat := { x | (x ∈ y) }
-#print z
-#eval asSet (.mapSet
-  (.binOp (.var "x" default) .plus (.number 1 default))
-  #[.in_ "x" $ .emptySet default] default
-  ) default >>= liftM ∘ ppExpr
