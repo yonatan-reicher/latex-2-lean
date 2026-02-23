@@ -159,6 +159,28 @@ private partial def asFinset : F → M Expr
     let list ← mkListLit (←mkFreshTypeMVar) elements.toList
     check list
     mkAppM ``List.toFinset #[list]
+  | .mapSet _ #[] .. => throwError s!"mapSet with no binders" -- TODO
+  | .mapSet lhs binders .. => do
+    -- We need to generate calls to finset operations and assume that the things
+    -- given can be translated to finsets. For `{ x + 1 | x \in A }`, we want to
+    -- use `Finset.image`, like this `A.image fun x => x + 1`. For multiple
+    -- bindings, we want to use `Finset.product` to make tuples first, then you
+    -- get something like `(A.product B).image fun (x, y) => x + y`.
+    let b ← match binders with
+      | #[b] => pure b
+      | _ => throwError m!"not supported yet"
+    let .in_ name set := b
+    -- Get the element type
+    let set ← asFinset set
+    check set
+    let t ← inferType set
+    let some elementType ← getSetOrFinsetElement t
+      | throwError m!"{set} must be a finset, but had type {t}."
+    -- Declare a local
+    withLocalDeclD (.mkSimple name) elementType fun fvar => do
+      -- Return final expression
+      mkAppM ``Finset.image $ (#[·, set]) $
+        ← mkLambdaFVars #[fvar] $ ← asWhatever lhs
   | f => throwError s!"unsupported formula for translation to finset: {repr f}"
 
 
