@@ -237,7 +237,7 @@ private def definition (name : Name) (f : F) : M LeanCmd := do
 
 
 /-- Translate an axiom. Needs to translate into a proposition. -/
-private def axiom_ (f : F) : M LeanCmd :=
+private def axiom_ (_f : F) : M LeanCmd :=
   panic! "axiom_"
 
 private def categorizedFormula : CF → M (Option LeanCmd)
