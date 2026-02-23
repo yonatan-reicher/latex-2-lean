@@ -46,9 +46,9 @@ private def mustBeFiniteSet (name : Name) : M Bool := do
 
 private def varToIdent (name : Name) : Ident := mkIdent (.mkSimple name)
 
-private def varToTerm (name : Name) : M Term := ``($(varToIdent name))
+private def varToTerm (name : Name) : TermElabM Term := ``($(varToIdent name))
 
-private def varToExpr (name : Name) : M Expr := do
+private def varToExpr (name : Name) : TermElabM Expr := do
   elabTermEnsuringType (← varToTerm name) none
 
 
@@ -86,7 +86,48 @@ private def mkExistsFVars (names : Array Expr) (body : Expr) : M Expr := do
   return result
 
 
+/-- Get some type that has a single parameter. Returns both the type and the
+  meta variable of the argument. -/
+private def getAppliedType' (name : Lean.Name) : MetaM (Expr × Expr) := do
+  let arg ← mkFreshTypeMVar
+  let u ← mkFreshLevelMVar
+  return (mkApp (mkConst name [u]) arg, arg)
+
+private def setType' : MetaM (Expr × Expr) := getAppliedType' ``Set
+private def setType : MetaM Expr := Prod.fst <$> setType'
+private def finsetType' : MetaM (Expr × Expr) := getAppliedType' ``Finset
+private def finsetType : MetaM Expr := Prod.fst <$> finsetType'
+
+
+private def getSetOrFinsetElement (e : Expr) : M (Option Expr) :=
+  withNewMCtxDepth do
+    let (setType, setElementType) ← setType'
+    let (finsetType, finsetElementType) ← finsetType'
+    let outMVar ← do
+      if ← isDefEq e setType then pure setElementType
+      else if ← isDefEq e finsetType then pure finsetElementType
+      else failure
+    return ← instantiateMVars outMVar
+
+
 mutual
+
+
+/-- Translate a binder to an exists expression. -/
+@[inline]
+private partial def binderToExists : Formula.Binder → (rhs : M Expr) → M Expr
+  | .in_ name set, rhs => do
+    -- First translate the set, and extract the element type.
+    let set ← asWhatever set
+    check set -- Must call this before the next action!
+    let type ← inferType set
+    let some elementType ← getSetOrFinsetElement type
+      | throwError m!"{set} must be a set, but had type {type}."
+    -- Declare the variable!
+    withLocalDeclD (.mkSimple name) elementType fun fvar => do
+      -- Now make some syntax.
+      mkAppM ``Exists $ Array.singleton $ ← mkLambdaFVars #[fvar] $
+      mkAnd (← mkAppM ``Membership.mem #[set, fvar]) (← rhs)
 
 
 private partial def asNumber : F → M Expr
@@ -146,19 +187,21 @@ private partial def asSet : F → M Expr
       elabTermEnsuringType stx (some (← setType))
   | .mapSet _ #[] .. => throwError s!"mapSet with no binders" -- TODO
   | .mapSet lhs binders .. => do
-    -- Get an array of the names and the sets.
-    let declInfos : Array $ Lean.Name × Expr ← binders.mapM fun
-        | .in_ name set => do
-          let name : Lean.Name := .mkSimple name
-          let set ← asWhatever set
-          return (name, set)
-    -- `withLocalDeclsDND` - bring local variables into scope that aren't type
-    -- dependent with eachother.
-    withLocalDeclsDND declInfos fun fvars => do
-      let lhs ← asWhatever lhs 
-      mkAppM ``setOf $ Array.singleton $ mkLambdaFVars fvars $ mkExists
-      let stx ← ``( { $lhs | $binders* } )
-      elabTermEnsuringType stx (some (← setType))
+    -- We want to generate `{ lhs | (x ∈ A) (y ∈ B) }`. This is actually pretty
+    -- hard to generate this as syntax, because of how free variables interact
+    -- with syntax and the expressions. So instead we generate
+    -- `setOf fun a => Exists fun x => x ∈ A ∧ Exists fun y => y ∈ B ∧ a = lhs`.
+    let aName := `a
+    let aType ← mkFreshTypeMVar
+    mkAppM ``setOf $ Array.singleton $
+      ← withLocalDeclD aName aType fun aFVar => do
+        mkLambdaFVars #[aFVar] $ ← do
+          let pred ← binders.foldl
+            (β := M Expr)
+            (init := do mkEq aFVar $ ← asWhatever lhs)
+            fun acc b => binderToExists b acc
+          check pred
+          return pred
   -- | .mapSet lhs binders _range => do
   --   -- Get an array of the names and the sets.
   --   let a : Array $ Lean.Name × Expr × TSyntax _ ← binders.mapM fun
@@ -181,10 +224,6 @@ private partial def asSet : F → M Expr
   --     elabTermEnsuringType stx (some (← setType))
   | f => throwError s!"unsupported formula for translation to set: {repr f}"
 where
-  setType : M Expr := do
-    let elementType ← mkFreshTypeMVar
-    let elementStx ← exprToSyntax elementType
-    elabType (← ``(Set $elementStx))
 
 
 private partial def asTuple : F → M Expr
