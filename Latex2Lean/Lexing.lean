@@ -73,6 +73,23 @@ private def symbol : Text.T Option Token.Kind := do
     else return .symbol #[c1]
 
 
+private def command : Text.T Option Token.Kind := do
+  -- Do start
+  let some '\\' ← Text.T.peek | failure
+  Text.T.advance
+  -- Check for special cases
+  let some c ← Text.T.peek | failure
+  if c = '{' then
+    Text.T.advance
+    return .command "{"
+  else if c = '}' then
+    Text.T.advance
+    return .command "}"
+  -- Return a command with a regular name
+  let nameChars ← manyChars Char.isAlpha
+  return .command nameChars
+
+
 private def lexSingle : Text.M Token := do
   -- This function assumes we've already checked for Eof.
   let startPos ← Text.T.pos
@@ -82,10 +99,7 @@ private def lexSingle : Text.M Token := do
     -- word
     if c.isAlpha then word
     -- command
-    else if c = '\\' then do
-      let _ ← Text.T.advance.maybe
-      let nameChars ← manyChars Char.isAlpha
-      pure (.command nameChars)
+    else if let some c ← command.maybe then pure c
     -- symbol
     else if let some s ← symbol.maybe then pure s
     -- digit
@@ -125,6 +139,10 @@ def lex : Subarray Char → (start : Pos) → Array Token
   lex r"\all your base" Pos.initial
   |> Array.map (·.kind)
   |> (· == #[.command' "all", .word' "your", .word' "base"])
+#guard
+  lex r"\{" Pos.initial
+  |> Array.map (·.kind)
+  |> (· == #[.command' "{"])
 -- Symbol
 #guard
   lex "x + y" Pos.initial
