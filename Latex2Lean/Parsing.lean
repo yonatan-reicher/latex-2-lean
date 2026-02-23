@@ -3,12 +3,17 @@ import Latex2Lean.InlineMath
 import Latex2Lean.Token
 import Latex2Lean.Formula
 
+import Lean.Message
+
 
 namespace Latex2Lean
 
 
 def Error := Range × String
 deriving instance DecidableEq, Repr, BEq for Error
+
+instance : Lean.ToMessageData Error where
+  toMessageData self := m!"{self.1} {self.2}"
 
 def T m := StateT (Subarray Token) (ExceptT Error m)
 abbrev M := T Id

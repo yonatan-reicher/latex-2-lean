@@ -28,7 +28,7 @@ def defineLatex {I} [Input I] (inp : I) (verbose : Bool := false)
   -- 4. Parse the tokens into formulas
   let formulas : Array (InlineMath.Kind × Formula) ← tokens
     |>.mapM (fun (kind, t) => return (kind, ← parse kind (t : Array Token)))
-    |>.mapError (fun e => m!"Error during parsing: {repr e}")
+    |>.mapError (fun e => m!"Error during parsing: {e}")
     |> Lean.ofExcept
   -- 5. Categorize the formulas
   let categorizedFormulas := formulas.map (Prod.map id categorize)
