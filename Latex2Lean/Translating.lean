@@ -7,6 +7,7 @@ import Mathlib.Data.Finset.Card
 import Mathlib.Data.Set.Basic
 
 import Lean
+import Batteries.Util.ExtendedBinder
 
 /-!
 About translating the formulas into lean commands, to insert into the user's
@@ -16,9 +17,10 @@ code.
 
 namespace Latex2Lean
 
+open Batteries.ExtendedBinder
 open Lean
-open Lean.Meta
 open Lean.Elab.Term
+open Lean.Meta
 
 private abbrev CF := CategorizedFormula
 private abbrev F := Formula
@@ -75,6 +77,13 @@ private def mkProdMkN (es : Array Expr) : MetaM (Expr × Expr) := do
   else
     let u ← mkFreshLevelMVar
     return (mkConst ``PUnit.unit [u], mkConst ``PUnit [u])
+
+
+private def mkExistsFVars (names : Array Expr) (body : Expr) : M Expr := do
+  let mut result := body
+  for name in names.reverse do
+    result ← mkAppM ``Exists $ Array.singleton $ ← mkLambdaFVars #[name] result
+  return result
 
 
 mutual
@@ -135,6 +144,41 @@ private partial def asSet : F → M Expr
       let separated : Syntax.TSepArray `term "," := .ofElems elements
       let stx ← ``(({ $separated:term,* } : Set _))
       elabTermEnsuringType stx (some (← setType))
+  | .mapSet _ #[] .. => throwError s!"mapSet with no binders" -- TODO
+  | .mapSet lhs binders .. => do
+    -- Get an array of the names and the sets.
+    let declInfos : Array $ Lean.Name × Expr ← binders.mapM fun
+        | .in_ name set => do
+          let name : Lean.Name := .mkSimple name
+          let set ← asWhatever set
+          return (name, set)
+    -- `withLocalDeclsDND` - bring local variables into scope that aren't type
+    -- dependent with eachother.
+    withLocalDeclsDND declInfos fun fvars => do
+      let lhs ← asWhatever lhs 
+      mkAppM ``setOf $ Array.singleton $ mkLambdaFVars fvars $ mkExists
+      let stx ← ``( { $lhs | $binders* } )
+      elabTermEnsuringType stx (some (← setType))
+  -- | .mapSet lhs binders _range => do
+  --   -- Get an array of the names and the sets.
+  --   let a : Array $ Lean.Name × Expr × TSyntax _ ← binders.mapM fun
+  --       | .in_ name set => do
+  --         let name : Lean.Name := .mkSimple name
+  --         let set ← asWhatever set
+  --         let b ← do
+  --           let name ← `(binderIdent| $(mkIdent name):ident)
+  --           let set ← exprToSyntax set
+  --           `(extBinderParenthesized| ($name ∈ $set) )
+  --         return (name, set, b)
+  --   let declInfos := a.map fun (name, set, _) => (name, set)
+  --   let binders := a.map fun (_, _, b) => b
+  --   -- `withLocalDeclsDND` - bring local variables into scope that aren't type
+  --   -- dependent with eachother.
+  --   withLocalDeclsDND declInfos fun _ => do
+  --     let lhs ← asWhatever lhs 
+  --     let lhs ← exprToSyntax lhs
+  --     let stx ← ``( { $lhs | $binders* } )
+  --     elabTermEnsuringType stx (some (← setType))
   | f => throwError s!"unsupported formula for translation to set: {repr f}"
 where
   setType : M Expr := do
@@ -204,3 +248,11 @@ private def categorizedFormula : CF → M (Option LeanCmd)
 
 def translate (f : CF) (a : Analysis) : TermElabM (Option LeanCmd) :=
   categorizedFormula f a
+
+def y : Set Nat := {1}
+def z : Set Nat := { x | (x ∈ y) }
+#print z
+#eval asSet (.mapSet
+  (.binOp (.var "x" default) .plus (.number 1 default))
+  #[.in_ "x" $ .emptySet default] default
+  ) default >>= liftM ∘ ppExpr
