@@ -15,6 +15,18 @@ open Lean (logInfo)
 open Lean.Elab.Term
 
 
+/-- Appends a prefix to an error's message. -/
+private def explainError (s : String) : Lean.Exception → Lean.Exception
+  | .error stx message => .error stx m!"{s}: {message}"
+  | e@(.internal ..) => e
+
+
+private def withExplainError {α m} [Monad m] [MonadExcept Lean.Exception m]
+(s : String) (x : m α) : m α :=
+  try x catch e => throw (explainError s e)
+
+
+
 def defineLatex {I} [Input I] (inp : I) (verbose : Bool := false)
 : TermElabM Unit := do
   -- 1. Read the input
@@ -38,8 +50,8 @@ def defineLatex {I} [Input I] (inp : I) (verbose : Bool := false)
   -- 7+8. Translate and immediately emit each command so that each definition
   -- is in the environment before the next formula is translated.
   for (_, cf) in categorizedFormulas do
-    let some cmd ← translate cf analysis | continue
+    let some cmd ← translate cf analysis |> withExplainError "Error during translation" | continue
     if verbose then logInfo (← cmd.prettyPrint)
-    emit cmd
+    emit cmd |> withExplainError "Error during emission"
 
 end Latex2Lean

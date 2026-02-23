@@ -23,14 +23,12 @@ def emit : LeanCmd → TermElabM Unit
       hints := default -- TODO
       safety := .safe
     }
-  | .axiom_ e => do
-    let name ← Lean.Core.mkFreshUserName (.mkSimple "h")
+  | .axiom_ name e => do
     check e
-    let type ← inferType e
     -- synthesizeSyntheticMVars
     addDecl $ .axiomDecl {
       name := name
-      type := type
+      type := ← instantiateMVars e
       levelParams := []
       isUnsafe := false
     }

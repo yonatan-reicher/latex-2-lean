@@ -276,8 +276,12 @@ private def definition (name : Name) (f : F) : M LeanCmd := do
 
 
 /-- Translate an axiom. Needs to translate into a proposition. -/
-private def axiom_ (_f : F) : M LeanCmd :=
-  panic! "axiom_"
+private def axiom_ (f : F) : M LeanCmd := do
+  -- TODO: Turns out that `getUnusedName` only returns a name not used in the
+  -- local context, so we can still get name clashes (because our names get
+  -- added to the global scope). Fix this!
+  let name := (← getLCtx).getUnusedName (.mkSimple "h")
+  return .axiom_ name $ ← asWhatever f
 
 private def categorizedFormula : CF → M (Option LeanCmd)
   | .definition name _ e => return some (← definition name e)
