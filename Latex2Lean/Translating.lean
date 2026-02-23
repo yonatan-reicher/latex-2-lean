@@ -202,26 +202,6 @@ private partial def asSet : F → M Expr
             fun acc b => binderToExists b acc
           check pred
           return pred
-  -- | .mapSet lhs binders _range => do
-  --   -- Get an array of the names and the sets.
-  --   let a : Array $ Lean.Name × Expr × TSyntax _ ← binders.mapM fun
-  --       | .in_ name set => do
-  --         let name : Lean.Name := .mkSimple name
-  --         let set ← asWhatever set
-  --         let b ← do
-  --           let name ← `(binderIdent| $(mkIdent name):ident)
-  --           let set ← exprToSyntax set
-  --           `(extBinderParenthesized| ($name ∈ $set) )
-  --         return (name, set, b)
-  --   let declInfos := a.map fun (name, set, _) => (name, set)
-  --   let binders := a.map fun (_, _, b) => b
-  --   -- `withLocalDeclsDND` - bring local variables into scope that aren't type
-  --   -- dependent with eachother.
-  --   withLocalDeclsDND declInfos fun _ => do
-  --     let lhs ← asWhatever lhs 
-  --     let lhs ← exprToSyntax lhs
-  --     let stx ← ``( { $lhs | $binders* } )
-  --     elabTermEnsuringType stx (some (← setType))
   | f => throwError s!"unsupported formula for translation to set: {repr f}"
 where
 
