@@ -22,9 +22,11 @@ atom ::=
   | number ".."  number
   | number
   | "\abs" atom
+  | "\sum" atom
   | "{" expr "}"
   | "\{" setInsides "\}"
   | "\set" "{" setInsides "}"
+  | "\mset" "{" setInsides "}"
   | "(" ( expr "," )* expr ")"
   | word // variable name
 

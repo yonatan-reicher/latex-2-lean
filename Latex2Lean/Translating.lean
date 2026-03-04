@@ -1,3 +1,4 @@
+import Latex2Lean.LeanUtil
 import Latex2Lean.CategorizedFormula
 import Latex2Lean.Analysis
 import Latex2Lean.LeanCmd
@@ -33,7 +34,6 @@ instance : MonadLift MetaM M where monadLift := fun x _ => x
 
 
 -- Helpers
-
 
 private def isFiniteSet (name : Name) : M Bool := do
   let isFiniteSet := (← read).isFiniteSet
@@ -97,6 +97,8 @@ private def setType' : MetaM (Expr × Expr) := getAppliedType' ``Set
 private def setType : MetaM Expr := Prod.fst <$> setType'
 private def finsetType' : MetaM (Expr × Expr) := getAppliedType' ``Finset
 private def finsetType : MetaM Expr := Prod.fst <$> finsetType'
+private def multisetType' : MetaM (Expr × Expr) := getAppliedType' ``Multiset
+private def multisetType : MetaM Expr := Prod.fst <$> multisetType'
 
 
 private def getSetOrFinsetElement (e : Expr) : M (Option Expr) :=
@@ -133,7 +135,7 @@ private partial def binderToExists : Formula.Binder → (rhs : M Expr) → M Exp
 private partial def asNumber : F → M Expr
   | .var name .. => varToExpr name
   | .number n .. => return mkNatLit n
-  | .abs inner .. => do
+  | .app ⟨"\\abs", _⟩ inner => do
     -- TODO: What if inner is actually a number?
     let innerExpr ← asFinset inner
     mkAppM ``Finset.card #[innerExpr]
@@ -149,18 +151,17 @@ private partial def asNumber : F → M Expr
 
 
 private partial def asFinset : F → M Expr
-  | .emptySet .. => mkAppM ``Finset.empty #[]
+  | .emptySet .set .. => mkAppM ``Finset.empty #[]
   | .var name .. => varToExpr name
   | .number n .. => throwError s!"cannot translate number {n} into a finset"
-  | .abs .. => throwError s!"cannot translate absolute value into a finset"
   -- | .binOp (left : Formula) (op : BinOp) (right : Formula)
-  | .simpleSet elements .. => do
+  | .simpleSet .set elements .. => do
     let elements ← elements.mapM asWhatever
     let list ← mkListLit (←mkFreshTypeMVar) elements.toList
     check list
     mkAppM ``List.toFinset #[list]
-  | .mapSet _ #[] .. => throwError s!"mapSet with no binders" -- TODO
-  | .mapSet lhs binders .. => do
+  | .mapSet .set _ #[] .. => throwError s!"mapSet with no binders" -- TODO
+  | .mapSet .set lhs binders .. => do
     -- We need to generate calls to finset operations and assume that the things
     -- given can be translated to finsets. For `{ x + 1 | x \in A }`, we want to
     -- use `Finset.image`, like this `A.image fun x => x + 1`. For multiple
@@ -185,10 +186,9 @@ private partial def asFinset : F → M Expr
 
 
 private partial def asSet : F → M Expr
-  | .emptySet .. => do empty $ some $ ← setType
+  | .emptySet .set .. => do empty $ some $ ← setType
   | .var name .. => varToExpr name
   | .number n .. => throwError s!"cannot translate number {n} into a set"
-  | .abs .. => throwError s!"cannot translate absolute value into a set"
   | .binOp left op right .. => do
     let leftExpr ← asSet left
     let rightExpr ← asSet right
@@ -197,16 +197,13 @@ private partial def asSet : F → M Expr
       | .cup => pure ``Set.union
       | _ => throwError s!"unsupported binary operator for translation to set: {repr op}"
     mkAppM f #[leftExpr, rightExpr]
-  | .simpleSet elements range => do
-    if elements.isEmpty
-    then asSet (.emptySet range)
-    else
-      let elements ← elements.mapM (asWhatever · >>= liftM ∘ exprToSyntax)
-      let separated : Syntax.TSepArray `term "," := .ofElems elements
-      let stx ← ``(({ $separated:term,* } : Set _))
-      elabTermEnsuringType stx (some (← setType))
-  | .mapSet _ #[] .. => throwError s!"mapSet with no binders" -- TODO
-  | .mapSet lhs binders .. => do
+  | .simpleSet .set elements _ => do
+    let elements ← elements.mapM (asWhatever · >>= liftM ∘ exprToSyntax)
+    let separated : Syntax.TSepArray `term "," := .ofElems elements
+    let stx ← ``(({ $separated:term,* } : Set _))
+    elabTermEnsuringType stx (some (← setType))
+  | .mapSet .set _ #[] .. => throwError s!"mapSet with no binders" -- TODO
+  | .mapSet .set lhs binders .. => do
     -- We want to generate `{ lhs | (x ∈ A) (y ∈ B) }`. This is actually pretty
     -- hard to generate this as syntax, because of how free variables interact
     -- with syntax and the expressions. So instead we generate
@@ -223,7 +220,29 @@ private partial def asSet : F → M Expr
           check pred
           return pred
   | f => throwError s!"unsupported formula for translation to set: {f}"
-where
+
+
+private partial def asMultiset : F → M Expr
+  | .emptySet .multiset .. => do empty $ some $ ← multisetType
+  | .var name .. => varToExpr name
+  | .binOp left op right .. => do
+    let leftExpr ← asMultiset left
+    let rightExpr ← asMultiset right
+    let f ← match op with
+      | .cap => pure ``Multiset.inter
+      | .cup => pure ``Multiset.union
+      | .plus => pure ``Multiset.add
+      | .minus => pure ``Multiset.sub
+      | _ => throwError s!"unsupported binary operator for translation to set: {repr op}"
+    mkAppM f #[leftExpr, rightExpr]
+  | .simpleSet .multiset elements _ => do
+    -- TODO: Make this a seprate helper
+    let elements ← elements.mapM (asWhatever · >>= liftM ∘ exprToSyntax)
+    let separated : Syntax.TSepArray `term "," := .ofElems elements
+    let stx ← ``({ $separated:term,* })
+    elabTermEnsuringType stx $ some $ ← multisetType
+  | .mapSet .multiset _ #[] .. => throwError s!"mapSet with no binders" -- TODO
+  | f => throwError s!"unsupported formula for translation to multi-set: {f}"
 
 
 private partial def asTuple : F → M Expr
@@ -236,10 +255,17 @@ private partial def asTuple : F → M Expr
 
 private partial def asWhatever (f : F) : M Expr :=
   match f with
-  | .emptySet .. => asSet f
+  | .emptySet .set .. => asSet f
+  | .emptySet .multiset .. => asMultiset f
   | .var name .. => varToExpr name
   | .number .. => asNumber f
-  | .abs .. => asNumber f
+  | .app .. =>
+    -- How could we know?? Let's try some things??
+    try asNumber f
+    catch e1 => try asSet f
+    catch e2 => try asFinset f
+    catch e3 => try asMultiset f
+    catch e4 => throwError m!"Could not translate {f}.\nErrors:\n{e1}\n{e2}\n{e3}\n{e4}"
   | .binOp left op right => do
     let left ← asWhatever left
     let left ← exprToSyntax left
@@ -255,8 +281,10 @@ private partial def asWhatever (f : F) : M Expr :=
       | .eq => ``($left = $right)
       | .in_ => ``($left ∈ $right)
     elabTermEnsuringType stx none
-  | .simpleSet .. => asSet f
-  | .mapSet .. => asSet f
+  | .simpleSet .set .. => asSet f
+  | .simpleSet .multiset .. => asMultiset f
+  | .mapSet .set .. => asSet f
+  | .mapSet .multiset .. => asMultiset f
   | .tuple .. => asTuple f
 
 

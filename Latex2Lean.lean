@@ -1,6 +1,7 @@
 -- Common things
 import Latex2Lean.Basic
 import Latex2Lean.Util
+import Latex2Lean.LeanUtil
 -- Types
 import Latex2Lean.Pos
 import Latex2Lean.Range

@@ -65,7 +65,7 @@ private def setFromRange (a b : Nat) (r : Range) : Formula :=
   Array.range len
   |>.map (· + a)
   |>.map (.number · r)
-  |> (.simpleSet · r)
+  |> (.simpleSet .set · r)
 
 
 private partial def commaSeparated
@@ -119,7 +119,7 @@ private partial def atom : T Option Formula := do
   let t ← pop
   match t.kind with
   | Token.Kind.command' "emptyset"
-  | Token.Kind.command' "varnothing" => return .emptySet t.range
+  | Token.Kind.command' "varnothing" => return .emptySet .set t.range
   | Token.Kind.number n =>
     (do
       let t2 ← peek
@@ -130,10 +130,14 @@ private partial def atom : T Option Formula := do
       | _ =>
         throw (t.range ∪ t2.range, "Expected a number after '..'"))
     <|> (do return .number n t.range)
-  | Token.Kind.command' "abs" =>
+  | Token.Kind.command' "abs"
+  | Token.Kind.command' "sum" =>
     let some inner ← atom.maybe
       | throw (t.range, r"Expected an expression atom after '\abs'")
-    return .abs inner (t.range ∪ inner.range)
+    match t.kind with
+    | Token.Kind.command' "abs" => return .app ⟨"\\abs", t.range⟩ inner
+    | Token.Kind.command' "sum" => return .app ⟨"\\sum", t.range⟩ inner
+    | _ => throw (t.range, "Invalid function name")
   | Token.Kind.symbol' "{" =>
     let some inner ← expr.maybe
       | throw (t.range, "Expected an expression inside '{ }' (Maybe you meant to
@@ -142,16 +146,21 @@ private partial def atom : T Option Formula := do
     <|> throw (t.range ∪ inner.range, "A '{' was not closed with an '}'")
     return inner
   | Token.Kind.command' "{" =>
-    let inner ← setInsides
+    let inner ← setInsides .set
     let r := t.range ∪ (←range)
     let inner := inner r
     popEq (Token.Kind.command' "}")
     <|> throw (r, r"A '\{' was not closed with an '\}'")
     return inner
-  | Token.Kind.command' "set" =>
+  | Token.Kind.command' "set"
+  | Token.Kind.command' "mset" =>
+    let kind ← match t.kind with
+      | .command' "set" => pure .set
+      | .command' "mset" => pure .multiset
+      | _ => throw (t.range, "Invalid set kind")
     popEq (Token.Kind.symbol' "{")
     <|> throw (t.range, r"Expected '{' after '\set'")
-    let inner ← setInsides
+    let inner ← setInsides kind
     let r := t.range ∪ (←range)
     popEq (Token.Kind.symbol' "}")
     <|> throw (r, r"A '\set{' was not closed with a '}'")
@@ -172,20 +181,20 @@ private partial def atom : T Option Formula := do
   | Token.Kind.error s => throw (t.range, s!"Lexing error: {s}")
 
 
-private partial def setInsides : M (Range → Formula) := do
+private partial def setInsides (kind : SetKind) : M (Range → Formula) := do
   let some lhs ← expr.maybe
-    | return .emptySet
+    | return .emptySet kind
   if (← popEq (Token.Kind.command' "mid") |>.maybe).isSome then
     let rhs ← binders
     if rhs.isEmpty then
       throw (← range, r"Expected at least one binder after '\mid' in a set")
-    return .mapSet lhs rhs
+    return .mapSet kind lhs rhs
   else
     if (← popEq (Token.Kind.symbol' ",") |>.maybe).isNone then
-      return Formula.simpleSet #[lhs]
+      return Formula.simpleSet kind #[lhs]
     let rest ← expressions
     let all := #[lhs] ++ rest
-    return .simpleSet all
+    return .simpleSet kind all
 where
   expressions := commaSeparated "an expression" "set" expr
   binders := commaSeparated "a binder" "set" binder

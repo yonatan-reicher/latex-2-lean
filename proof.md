@@ -10,6 +10,7 @@ style. Spoiler: _You can't!_
 $$
 \newcommand{\tup}[1]{\left\langle #1 \right\rangle}
 \newcommand{\abs}[1]{\left| #1 \right|}
+\newcommand{\mset}[1]{\{\!\{ #1 \}\!\}}
 $$
 
 ---
@@ -40,9 +41,9 @@ And assume, by contradiction, $\abs{D \cap H} = \abs{D \cap V}$
 | $(D \cap H) \cup (D \cap V) = D$                              | By $D \subseteq H \cup V$ |
 | $(D \cap H) \cap (D \cap V) = \varnothing$                    | Because $H$ and $V$ are disjoint! |
 | $\abs{D \cap H} = \abs{D \cap V} = 25$                        | By the assumption, and by previous two conjuctures |
-| $\sum \set{ x \mid \tup{x, y} \in^{2} D \cap V }$ is even     | Every number in the sum appears twice, as the $x$'s of a tile's cells are equal!
-| $\sum \set{ x \mid \tup{x, y} \in^{2} D \cap H }$ is odd      | Here every number appears with it's successor by similar reasoning
-| $\sum \set{ x \mid \tup{x, y} \in 0..9 \times 0..9 }$ is even | By decide |
+| $\sum \mset{ x \mid \tup{x, y} \in^{2} D \cap V }$ is even     | Every number in the sum appears twice, as the $x$'s of a tile's cells are equal!
+| $\sum \mset{ x \mid \tup{x, y} \in^{2} D \cap H }$ is odd      | Here every number appears with it's successor by similar reasoning
+| $\sum \mset{ x \mid \tup{x, y} \in 0..9 \times 0..9 }$ is even | By decide |
 
 Now we notice
 $$

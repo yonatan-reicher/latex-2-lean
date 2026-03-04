@@ -30,13 +30,15 @@ private def BinOp.toNodeName : BinOp → String
 mutual
 
 partial def Formula.toNode : Formula → Node
-  | .emptySet _ => ⟨"new-set", []⟩
+  | .emptySet _ _ => ⟨"new-set", []⟩
   | .var name _ => ⟨String.mk name.toList, []⟩
   | .number n _ => ⟨ToString.toString n, []⟩
-  | .abs inner _ => ⟨"abs", [inner.toNode]⟩
+  | .app ⟨"\\abs", _⟩ arg => ⟨"abs", [arg.toNode]⟩
+  | .app ⟨"\\name", _⟩ arg => ⟨"abs", [arg.toNode]⟩
+  | .app ⟨name, _⟩ _ => panic! s!"don't know how to turn function {name} to node"
   | .binOp left op right => ⟨op.toNodeName, [left.toNode, right.toNode]⟩
-  | .simpleSet elements _ => ⟨"new-set", elements.toList.map toNode⟩
-  | .mapSet lhs binders _ => ⟨"map", lhs.toNode :: binders.toList.map Formula.Binder.toNode⟩
+  | .simpleSet _ elements _ => ⟨"new-set", elements.toList.map toNode⟩
+  | .mapSet _ lhs binders _ => ⟨"map", lhs.toNode :: binders.toList.map Formula.Binder.toNode⟩
   | .tuple elements _ => ⟨"tuple", elements.toList.map toNode⟩
 
 partial def Formula.Binder.toNode : Formula.Binder → Node
@@ -85,7 +87,7 @@ def analyze (formulas : Subarray CategorizedFormula) : IO Analysis := do
 /-- info: true -/
 #guard_msgs in #eval do
   let a ← analyze #[
-      CategorizedFormula.definition "A" default (Formula.emptySet default),
+      CategorizedFormula.definition "A" default (Formula.emptySet .set default),
     ].toSubarray
   return a == {
     isFiniteSet := .ofArray #[ ⟨"A", []⟩, ⟨"new-set", []⟩ ],
