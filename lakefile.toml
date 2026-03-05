@@ -2,6 +2,7 @@ name = "Latex2Lean"
 version = "0.1.0"
 keywords = ["math"]
 defaultTargets = ["Latex2Lean"]
+testDriver = "Latex2LeanTests"
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -18,3 +19,7 @@ rev = "main"
 
 [[lean_lib]]
 name = "Latex2Lean"
+
+[[lean_lib]]
+name = "Latex2LeanTests"
+globs = ["Latex2LeanTests.+"]
