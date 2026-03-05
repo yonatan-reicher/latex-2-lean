@@ -18,6 +18,11 @@ inductive BinOp where
   | cap
   | cup
   | in_
+  | times
+  | subseteq
+  | subset
+  | supseteq
+  | supset
   deriving DecidableEq, Inhabited, Repr
 
 
@@ -30,7 +35,51 @@ def BinOp.toString : BinOp → String
   | cap => r"\cap"
   | cup => r"\cup"
   | in_ => r"\in"
+  | times => r"\times"
+  | subseteq => r"\subseteq"
+  | subset => r"\subset"
+  | supseteq => r"\supseteq"
+  | supset => r"\supset"
 
+
+/-- An operator that returns a true/false value -/
+def BinOp.predicative : BinOp → Bool
+  | .eq
+  | .in_
+  | .subseteq
+  | .subset
+  | .supseteq
+  | .supset
+    => true
+  | .plus
+  | .minus
+  | .star
+  | .slash
+  | .cap
+  | .cup
+  | .times 
+    => false
+
+def BinOp.all : Array BinOp :=
+  #[
+    .eq,
+    .in_,
+    .subseteq,
+    .subset,
+    .supseteq,
+    .supset,
+    .plus,
+    .minus,
+    .star,
+    .slash,
+    .cap,
+    .cup,
+    .times,
+  ]
+
+theorem BinOp.mem_all : ∀ op, op ∈ all := by
+  intro op
+  cases op <;> decide
 
 instance : ToString BinOp where
   toString := BinOp.toString

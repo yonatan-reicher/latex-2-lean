@@ -112,6 +112,31 @@ private def getSetOrFinsetElement (e : Expr) : M (Option Expr) :=
     return ← instantiateMVars outMVar
 
 
+/-- Make an expression for a binary operator. Uses Syntax elaboration. Because
+  of that, make sure the arguments have the correct types and that the output is
+  in a context that could infer it's type -/
+def binOp : BinOp → (expectedType? : Option Lean.Expr) → Expr → Expr → M Expr
+  | op, t, a, b => do
+    let a ← exprToSyntax a
+    let b ← exprToSyntax b
+    let stx ← toStx op a b
+    elabTerm stx t
+where toStx : BinOp → Term → Term → M Term
+  | .plus, a, b => ``($a + $b)
+  | .minus, a, b => ``($a - $b)
+  | .star, a, b => ``($a * $b)
+  | .slash, a, b => ``($a / $b)
+  | .cap, a, b => ``($a ∩ $b)
+  | .cup, a, b => ``($a ∪ $b)
+  | .eq, a, b => ``($a = $b)
+  | .in_, a, b => ``($a ∈ $b)
+  | .supset, a, b => ``($a ⊃ $b)
+  | .supseteq, a, b => ``($a ⊇ $b)
+  | .subset, a, b => ``($a ⊂ $b)
+  | .subseteq, a, b => ``($a ⊆ $b)
+  | .times, a, b => ``($a × $b)
+
+
 mutual
 
 
@@ -268,19 +293,8 @@ private partial def asWhatever (f : F) : M Expr :=
     catch e4 => throwError m!"Could not translate {f}.\nErrors:\n{e1}\n{e2}\n{e3}\n{e4}"
   | .binOp left op right => do
     let left ← asWhatever left
-    let left ← exprToSyntax left
     let right ← asWhatever right
-    let right ← exprToSyntax right
-    let stx ← match op with
-      | .plus => ``($left + $right)
-      | .minus => ``($left - $right)
-      | .star => ``($left * $right)
-      | .slash => ``($left / $right)
-      | .cap => ``($left ∩ $right)
-      | .cup => ``($left ∪ $right)
-      | .eq => ``($left = $right)
-      | .in_ => ``($left ∈ $right)
-    elabTermEnsuringType stx none
+    binOp op none left right
   | .simpleSet .set .. => asSet f
   | .simpleSet .multiset .. => asMultiset f
   | .mapSet .set .. => asSet f

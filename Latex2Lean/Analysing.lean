@@ -25,6 +25,11 @@ private def BinOp.toNodeName : BinOp → String
   | .cap => "intersect"
   | .cup => "union"
   | .in_ => "in"
+  | .subseteq => "subseteq"
+  | .subset => "subset"
+  | .supseteq => "supseteq"
+  | .supset => "supset"
+  | .times => "times"
 
 
 mutual

@@ -83,6 +83,21 @@ private partial def commaSeparated
     return #[first]
 
 
+private partial def binaryOperator : T Option BinOp := do
+  let t ← pop
+  BinOp.all.find? fun x => toTokenKind x = t.kind
+where toTokenKind : BinOp → Token.Kind
+  | op =>
+    let str := op.toString
+    let c := str.get 0
+    if c = some '\\'
+    then .command' $ str.drop 1
+    else .symbol' str
+
+#guard binaryOperator.toTokenKind .plus = .symbol "+"
+#guard binaryOperator.toTokenKind .times = .command "times"
+
+
 mutual
 
 
@@ -99,20 +114,6 @@ private partial def binaryExpr : T Option Formula := do
     let some rhs ← binaryExpr.maybe
       | throw (opRange, "Expected an expression after a binary operator")
     return .binOp lhs op rhs
-
-
-private partial def binaryOperator : T Option BinOp := do
-  let t ← pop
-  match t.kind with
-  | Token.Kind.symbol' "+" => return .plus
-  | Token.Kind.symbol' "-" => return .minus
-  | Token.Kind.symbol' "*" => return .star
-  | Token.Kind.symbol' "/" => return .slash
-  | Token.Kind.symbol' "=" => return .eq
-  | Token.Kind.command' "cap" => return .cap
-  | Token.Kind.command' "cup" => return .cup
-  | Token.Kind.command' "in" => return .in_
-  | _ => none
 
 
 private partial def atom : T Option Formula := do
@@ -221,8 +222,15 @@ end
 
 def parse : InlineMath.Kind → Subarray Token → Except Error Formula
   | _kind, tokens =>
-    expr tokens
-    |> Except.map (·.1)
+    match expr tokens with
+    | .error e => .error e
+    | .ok (f, rest) =>
+      if h : rest.size = 0 then .ok f
+      else
+        have : NeZero rest.size := by exact { out := h }
+        let first := rest.get 0
+        .error (first.range,
+           s!"leftover tokens - parsed program up to this point: \n{f}")
 
 
 #guard

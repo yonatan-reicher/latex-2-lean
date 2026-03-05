@@ -7,6 +7,10 @@ namespace Latex2Lean
 
 def categorize : Formula → CategorizedFormula
   | .binOp (.var name nameRange) .eq right => .definition name nameRange right
-  | f@(.binOp _ .in_ _)
-  | f@(.binOp _ .eq _) => .axiom_ f
+  | f@(.binOp _ op _) => if op.predicative then .axiom_ f else .plain f
   | f => .plain f
+
+
+#guard
+  categorize (.binOp (.var "X" default) .subseteq (.var "Y" default))
+  |> fun | .axiom_ _ => true | _ => false

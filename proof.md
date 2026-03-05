@@ -23,7 +23,7 @@ D \subseteq H \cup V
 $$
 
 ### Assumptions
-Assume $D$ is a cover of our $10 \times 10$ board:  
+Assume $D$ is a cover of our $10 \times 10$ board:
 ($\in^2$ is the relation $a \in^2 c \iff \exists b \in c, a \in b$)
 $$
 \begin{align}

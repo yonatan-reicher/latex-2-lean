@@ -7,7 +7,7 @@ import Lean
 namespace Latex2Lean
 
 open Lean (addDecl instantiateMVars)
-open Lean.Meta (inferType check)
+open Lean.Meta (inferType check isProp)
 open Lean.Elab (TermElabM)
 
 def emit : LeanCmd → TermElabM Unit
@@ -25,7 +25,10 @@ def emit : LeanCmd → TermElabM Unit
     }
   | .axiom_ name e => do
     check e
-    -- synthesizeSyntheticMVars
+    if not <| ← isProp e then
+      let t ← inferType e
+      throwError m!"axioms must define propositions, but this one defines a '{t}'"
+    Lean.Elab.Term.synthesizeSyntheticMVarsNoPostponing
     addDecl $ .axiomDecl {
       name := name
       type := ← instantiateMVars e

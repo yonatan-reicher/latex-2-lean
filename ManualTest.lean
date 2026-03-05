@@ -2,7 +2,8 @@ import Latex2Lean
 import Mathlib
 
 
-def y := 2
+axiom D {α} : Set α
+define_latex verbose r"X \subseteq \emptyset"
 define_latex file verbose "proof-adjusted.md"
 
 define_latex verbose r"
