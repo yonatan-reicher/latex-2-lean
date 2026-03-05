@@ -3,9 +3,13 @@ import Latex2Lean.CategorizedFormula
 import Latex2Lean.Analysis
 import Latex2Lean.LeanCmd
 
+-- Finset
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.Finset.Card
+-- Set
 import Mathlib.Data.Set.Basic
+-- Multiset
+import Mathlib.Algebra.BigOperators.Group.Multiset.Defs
 
 import Lean
 import Batteries.Util.ExtendedBinder
@@ -164,6 +168,9 @@ private partial def asNumber : F → M Expr
     -- TODO: What if inner is actually a number?
     let innerExpr ← asFinset inner
     mkAppM ``Finset.card #[innerExpr]
+  | .app ⟨"\\sum", _⟩ inner => do
+    -- For now, assume the result is a multiset.
+    mkAppM ``Multiset.sum #[← asMultiset inner]
   | .binOp left op right .. => do
     let leftExpr ← asNumber left
     let rightExpr ← asNumber right

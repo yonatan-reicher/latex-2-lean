@@ -12,5 +12,4 @@ Let $x = \sum \mset{ 1 }$
 
 
 "
-#print x
-#guard x = 1
+example : x = 1 := by decide
