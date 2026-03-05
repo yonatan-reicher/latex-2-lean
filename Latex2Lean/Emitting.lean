@@ -15,6 +15,7 @@ def emit : LeanCmd → TermElabM Unit
     let e ← instantiateMVars e
     check e
     let type <- inferType e
+    Lean.Elab.Term.synthesizeSyntheticMVarsNoPostponing
     addDecl $ .defnDecl {
       name := name
       type := type
