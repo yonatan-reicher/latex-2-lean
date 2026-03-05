@@ -40,6 +40,7 @@ partial def Formula.toNode : Formula → Node
   | .number n _ => ⟨ToString.toString n, []⟩
   | .app ⟨"\\abs", _⟩ arg => ⟨"abs", [arg.toNode]⟩
   | .app ⟨"\\name", _⟩ arg => ⟨"abs", [arg.toNode]⟩
+  | .app ⟨"\\sum", _⟩ arg => ⟨"sum", [arg.toNode]⟩
   | .app ⟨name, _⟩ _ => panic! s!"don't know how to turn function {name} to node"
   | .binOp left op right => ⟨op.toNodeName, [left.toNode, right.toNode]⟩
   | .simpleSet _ elements _ => ⟨"new-set", elements.toList.map toNode⟩
