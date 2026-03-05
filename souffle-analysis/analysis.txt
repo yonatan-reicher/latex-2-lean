@@ -9,6 +9,10 @@ must_be_finite:
 -----------------------
   must_be_finite(x)
 
+        sum x
+-----------------------
+  must_be_finite(x)
+
        must_be_finite(left U right)
 ----------------------------------------------
  must_be_finite(left)   must_be_finite(right)

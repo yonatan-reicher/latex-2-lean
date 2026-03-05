@@ -40,6 +40,7 @@ subargs_length([ h, t ], l + 1) :-
 /// E.g.  |D|
 .decl expr_must_be_finite_set(expr: Expr)
 expr_must_be_finite_set(expr) :- expr(`"abs"(expr)).
+expr_must_be_finite_set(expr) :- expr(`"sum"(expr)).
 expr_must_be_finite_set(left) :- expr_must_be_finite_set(`"union"(left, _)).
 expr_must_be_finite_set(right) :- expr_must_be_finite_set(`"union"(_, right)).
 // expr_must_be_finite_set(left) :-
