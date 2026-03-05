@@ -10,6 +10,8 @@ import Mathlib.Data.Finset.Card
 import Mathlib.Data.Set.Basic
 -- Multiset
 import Mathlib.Algebra.BigOperators.Group.Multiset.Defs
+-- Nat
+import Mathlib.Algebra.Group.Nat.Defs
 
 import Lean
 import Batteries.Util.ExtendedBinder
