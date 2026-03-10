@@ -39,10 +39,13 @@ def defineLatex {I} [Input I] (inp : I) (verbose : Bool := false)
   let tokens : Array (InlineMath.Kind × Array Token) := spans
     |>.map fun (kind, s) => (kind, lex s.text s.start)
   -- 4. Parse the tokens into formulas
-  let formulas : Array (InlineMath.Kind × Formula) ← tokens
-    |>.mapM (fun (kind, t) => return (kind, ← parse kind (t : Array Token)))
-    |>.mapError (fun e => m!"Error during parsing: {e}")
-    |> Lean.ofExcept
+  let formulas : Array (InlineMath.Kind × Formula) ←
+    tokens.filterMapM fun (kind, t) =>
+      match parse kind t with
+      | .ok f => pure (kind, f)
+      | .error e => do
+        Lean.logWarning m!"Error during parsing: {e}"
+        return none
   -- 5. Categorize the formulas
   let categorizedFormulas := formulas.map (Prod.map id categorize)
   -- 6. Analyze
