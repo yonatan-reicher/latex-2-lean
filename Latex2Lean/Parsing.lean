@@ -62,7 +62,7 @@ def range : M Range := do
 
 private def setFromRange (a b : Nat) (r : Range) : Formula :=
   let len := b - a
-  Array.range len
+  Array.range (len + 1)
   |>.map (· + a)
   |>.map (.number · r)
   |> (.simpleSet .set · r)
