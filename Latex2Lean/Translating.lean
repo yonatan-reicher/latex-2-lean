@@ -114,7 +114,7 @@ private def getSetOrFinsetElement (e : Expr) : M (Option Expr) :=
     let outMVar ← do
       if ← isDefEq e setType then pure setElementType
       else if ← isDefEq e finsetType then pure finsetElementType
-      else failure
+      else none
     return ← instantiateMVars outMVar
 
 
