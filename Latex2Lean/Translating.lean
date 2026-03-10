@@ -107,13 +107,16 @@ private def multisetType' : MetaM (Expr × Expr) := getAppliedType' ``Multiset
 private def multisetType : MetaM Expr := Prod.fst <$> multisetType'
 
 
-private def getSetOrFinsetElement (e : Expr) : M (Option Expr) :=
+/-- Get the element type of a set or a finset -/
+private def getSetElement (e : Expr) : M (Option Expr) :=
   withNewMCtxDepth do
     let (setType, setElementType) ← setType'
     let (finsetType, finsetElementType) ← finsetType'
+    let (multisetType, multisetElementType) ← multisetType'
     let outMVar ← do
       if ← isDefEq e setType then pure setElementType
       else if ← isDefEq e finsetType then pure finsetElementType
+      else if ← isDefEq e multisetType then pure multisetElementType
       else none
     return ← instantiateMVars outMVar
 
@@ -154,7 +157,7 @@ private partial def binderToExists : Formula.Binder → (rhs : M Expr) → M Exp
     let set ← asWhatever set
     check set -- Must call this before the next action!
     let type ← inferType set
-    let some elementType ← getSetOrFinsetElement type
+    let some elementType ← getSetElement type
       | throwError m!"{set} must be a set, but had type {type}."
     -- Declare the variable!
     withLocalDeclD (.mkSimple name) elementType fun fvar => do
@@ -209,7 +212,7 @@ private partial def asFinset : F → M Expr
     let set ← asFinset set
     check set
     let t ← inferType set
-    let some elementType ← getSetOrFinsetElement t
+    let some elementType ← getSetElement t
       | throwError m!"{set} must be a finset, but had type {t}."
     -- Declare a local
     withLocalDeclD (.mkSimple name) elementType fun fvar => do
@@ -275,7 +278,37 @@ private partial def asMultiset : F → M Expr
     let separated : Syntax.TSepArray `term "," := .ofElems elements
     let stx ← ``({ $separated:term,* })
     elabTermEnsuringType stx $ some $ ← multisetType
+  | f@(.simpleSet .set ..) => do
+    -- You can only turn a finset into a multiset!
+    let s ← asFinset f
+    -- mkAppOptM ``Coe.coe #[none, ← multisetType, none, s]
+    -- There is actually no coercesion instance for this conversion, so use the
+    -- dumb thing.
+    mkAppM ``Finset.val #[s]
   | .mapSet .multiset _ #[] .. => throwError s!"mapSet with no binders" -- TODO
+  | .mapSet .multiset lhs binders _ => do
+    -- Translate to ``Multiset.pmap, which takes 3 argumets - a mapping with a
+    -- predicate, a multi-set, and a proof that the predicate holds for all the
+    -- elements of the set. We don't care for the predicate, so we just give it
+    -- a constant True.
+    let #[.in_ name s] := binders | throwError m!"not implemented yet"
+    -- This is the set
+    let s ← asMultiset s
+    check s
+    let t ← inferType s 
+    let some elementType ← getSetElement t
+      | throwError m!"expected this to be a set"
+    -- This is the mapping
+    let f ← withLocalDeclD (.mkSimple name) elementType fun fVar => do
+      -- This is the proof for the predicate on the element.
+      withLocalDeclD `h (.const ``True []) fun hFVar => do
+        mkLambdaFVars #[fVar, hFVar] $ ← asWhatever lhs
+    -- the next variable is a proof of (∀ a ∈ s, p a) where p := fun _ => True
+    let h ← withLocalDeclD `a elementType fun aFVar => do
+      let mem ← mkAppM ``Membership.mem #[s, aFVar]
+      withLocalDeclD `h mem fun hFVar => do
+          mkLambdaFVars #[aFVar, hFVar] $ .const ``trivial []
+    mkAppM ``Multiset.pmap #[f, s, h]
   | f => throwError s!"unsupported formula for translation to multi-set: {f}"
 
 
