@@ -178,7 +178,7 @@ private partial def atom : T Option Formula := do
   | Token.Kind.word name => return .var name t.range
   -- TODO: Maybe we want to just return none?
   | Token.Kind.command c => throw (t.range, s!"Invalid command '{c}'")
-  | Token.Kind.symbol s => throw (t.range, s!"Invalide symbol '{s}'")
+  | Token.Kind.symbol s => throw (t.range, s!"Invalid symbol '{s}'")
   | Token.Kind.error s => throw (t.range, s!"Lexing error: {s}")
 
 
