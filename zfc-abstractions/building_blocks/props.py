@@ -1,9 +1,9 @@
 import z3
-from z3 import BoolSort, SortRef, ExprRef
+from z3 import Const, Consts, BoolSort, SortRef, ExprRef, And, Not, Map, Distinct
 from collections.abc import Callable
 
 from .base import IGuarded
-from .set import Element, Elements
+from .set import SetRef, Element, Elements
 from .mapping import MappingRef, promote
 from .formula_manip import alpha_renaming
 
@@ -21,14 +21,72 @@ def Exists(bound_vars, body):
 fresh_idx = iter(range(0xffff))
 
 
+def Prod(sort: SortRef | [SortRef], fbody: Callable[..., ExprRef], mnemonic='μ'):
+    return quantifier_core(sort, fbody, mnemonic, ForAll, z3.ForAll)
+
 def Sig(sort: SortRef | [SortRef], fbody: Callable[..., ExprRef], mnemonic='μ'):
+    return quantifier_core(sort, fbody, mnemonic, Exists, z3.Exists)
+
+def quantifier_core(sort: SortRef | [SortRef], fbody: Callable[..., ExprRef], mnemonic,
+                    quant, z3_quant):
     if not isinstance(sort, list): sort = [sort]
     vz = [promote(f'tmp${fresh_idx.__next__()}', s) for s in sort]
     vs = [promote(mnemonic, s) for s in sort]
     # this is a nasty trick to get variables with the same mnemonic.
     # these then go through alpha renaming in order to make sense
-    return alpha_renaming(z3.Exists(vs, Exists(vz, fbody(*vz)).body()))
+    return alpha_renaming(z3_quant(vs, quant(vz, fbody(*vz)).body()))
 
+##
+# Set operations and properties
+##
+
+def subset(s1, s2):
+    u1, u2 = s1.univ(), s2.univ()
+    if u1 == u2:
+        x, y = Consts('x y', u1)
+        return ForAll([x, y], s1[x] >> s2[x])
+    else:
+        z = Const('z', u1)
+        return ForAll([z], Not(s1[x]))
+
+def disjoint(s1, s2):
+    u1, u2 = s1.univ(), s2.univ()
+    if u1 == u2:
+        x = Const('x', u1)
+        return ForAll([x], Not(s1.set[x] & s2.set[x]))
+    else:
+        return BoolVal(True)
+
+def union(s1, s2):
+    u1, u2 = s1.univ(), s2.univ()
+    if u1 == u2:
+        return SetRef.of(u1, Map(Or().decl(), s1.set, s2.set))
+    else:
+        raise TypeError('universe sort mismatch')
+
+def intersection(s1, s2):
+    u1, u2 = s1.univ(), s2.univ()
+    if u1 == u2:
+        return SetRef.of(u1, Map(And().decl(), s1.set, s2.set))
+    else:
+        return SetRef.of(u1, K(u1, False))
+
+def set_diff(s1, s2):
+    u1, u2 = s1.univ(), s2.univ()
+    if u1 == u2:
+        return SetRef.of(u1, Map(And().decl(), s1.set, Map(Not(False).decl(), s2.set)))
+    else:
+        return SetRef.of(u1, K(u1, False))
+
+def card_geq(s: SetRef, n: int):
+    return Sig([s] * n, Distinct)
+
+def isomorphic(s1, s2):
+    return Sig(s1 ** s2, lambda f: Isomorphism(f))
+
+##
+# Classes of functions
+##
 
 def Injective(f: MappingRef):
     x, y = Elements("x y", f.domain())

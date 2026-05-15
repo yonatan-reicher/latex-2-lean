@@ -3,8 +3,6 @@ from functools import reduce
 
 SortRef.__pow__ = lambda dom, rng: mk_mapping(as_sort(dom), as_sort(rng))
 SortRef.__rpow__ = lambda rng, dom: mk_mapping(as_sort(dom), as_sort(rng))
-BoolRef.__bwor__ = Or
-BoolRef.__bwxor__ = Xor
 
 def _implies(lhs, rhs):
     if isinstance(lhs, list):

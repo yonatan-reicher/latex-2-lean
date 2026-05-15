@@ -43,7 +43,7 @@ class MappingRef(ArrayRef, EvalAt, IGuarded):
 
     def eval(self, m: ModelRef):
         dom, rng = self.domain(), self.range()
-        return {e: (promote(self[e]) @ m) for e in univ(dom, m)}
+        return {e: (promote(self[e], rng) @ m) for e in univ(dom, m)}
 
 def Mapping(name: string, sort: MappingSortRef):
     return MappingRef.of(Const(name, sort), sort)
