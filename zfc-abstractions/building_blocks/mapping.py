@@ -45,7 +45,7 @@ class MappingRef(ArrayRef, EvalAt, IGuarded):
         dom, rng = self.domain(), self.range()
         return {e: (promote(self[e], rng) @ m) for e in univ(dom, m)}
 
-def Mapping(name: string, sort: MappingSortRef):
+def Mapping(name: str, sort: MappingSortRef):
     return MappingRef.of(Const(name, sort), sort)
 
 
@@ -71,7 +71,7 @@ class TabularMappingRef(MappingRef):
     '''
     A special case of mapping in which entries are given as a dictionary.
     '''
-    table: dist
+    table: dict
     
     @classmethod
     def of(cls, e: ArrayRef, sort: SortRef=None, table: dict={}):
