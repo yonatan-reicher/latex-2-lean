@@ -1,7 +1,7 @@
 from z3 import SortRef, ExprRef, EnumSort, DatatypeSortRef
 
 class FinSortRef(SortRef):
-    elements: [ExprRef]
+    elements: list[ExprRef]
 
     def values(self): return self.elements
 
@@ -11,12 +11,12 @@ class FinSortRef(SortRef):
     def __iter__(self): return iter(self.elements)
     
     @classmethod
-    def of(cls, e: [DatatypeSortRef, [ExprRef]]):
+    def of(cls, e: tuple[DatatypeSortRef, list[ExprRef]]):
         c = cls(e[0].ast, ctx=e[0].ctx)
         c.elements = e[1]
         return c
 
-def FinSort(name: str, element_names: [str]):
+def FinSort(name: str, element_names: list[str]):
     return FinSortRef.of(EnumSort(name, element_names))
 
 Fin = {

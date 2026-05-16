@@ -5,5 +5,5 @@ class EvalAt:
     def __matmul__(self, m: ModelRef): return self.eval(m)
 
 class IGuarded:
-    def guards(self) -> [BoolRef]: return []
+    def guards(self) -> list[BoolRef]: return []
 
