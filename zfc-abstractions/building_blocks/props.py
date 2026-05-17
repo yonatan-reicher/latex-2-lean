@@ -1,5 +1,5 @@
 import z3
-from z3 import Const, Consts, BoolSort, SortRef, ExprRef, And, Not, Map, Distinct
+from z3 import Const, Consts, BoolSort, SortRef, ExprRef, And, Not, Map, Distinct, K
 from collections.abc import Callable
 
 from .base import IGuarded
