@@ -26,7 +26,7 @@ def MappingSort(dom: SortRef, rng: SortRef):
 
 
 class MappingRef(ArrayRef, EvalAt, IGuarded):
-    _sort: SortRef
+    _sort: MappingSortRef
 
     def sort(self): return self._sort
 
@@ -36,7 +36,7 @@ class MappingRef(ArrayRef, EvalAt, IGuarded):
         return [ForAll([x], Exists([y], self[x] == y))]
 
     @classmethod
-    def of(cls, e: ArrayRef, sort: SortRef):
+    def of(cls, e: ArrayRef, sort: MappingSortRef):
         e = cls(e.ast, ctx=e.ctx)
         e._sort = sort
         return e
