@@ -21,7 +21,7 @@ class SetRef(SortRef, EvalAt):
 
     def eval(self, m):
         return [ElementRef.of(e, self) for e in univ(self.set.domain(), m)
-                if m.eval(self.set[e])]
+                if m.eval(self.set[e], model_completion=True)]
 
 def Set(name: str, univ: SortRef):
     return SetRef.of(univ, Array(name, univ, BoolSort()))
