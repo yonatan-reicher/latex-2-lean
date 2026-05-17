@@ -47,7 +47,7 @@ def subset(s1, s2):
         return ForAll([x, y], s1[x] >> s2[x])
     else:
         z = Const('z', u1)
-        return ForAll([z], Not(s1[x]))
+        return ForAll([z], Not(s1[z]))
 
 def disjoint(s1, s2):
     u1, u2 = s1.univ(), s2.univ()
