@@ -1,7 +1,7 @@
 from z3 import AstRef, BoolRef, ModelRef
 
 class EvalAt:
-    def eval(self, m: ModelRef) -> Any: return m.eval(self)
+    def eval(self, m: ModelRef) -> Any: return m.eval(self, model_completion=True)
     def __matmul__(self, m: ModelRef): return self.eval(m)
 
 class IGuarded:
