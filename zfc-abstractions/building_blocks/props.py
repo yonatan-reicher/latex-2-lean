@@ -1,5 +1,6 @@
 import z3
-from z3 import Const, Consts, BoolSort, SortRef, ExprRef, And, Not, Map, Distinct, K
+from z3 import Const, Consts, BoolSort, BoolVal, SortRef, ExprRef, \
+               And, Or, Not, If, Map, Distinct, K
 from collections.abc import Callable
 
 from .base import IGuarded
@@ -9,13 +10,11 @@ from .formula_manip import alpha_renaming
 
 
 def ForAll(bound_vars, body):
-    props = [g for v in bound_vars
-                 for g in (v.guards() if isinstance(v, IGuarded) else [])]
+    props = IGuarded.guards(bound_vars)
     return z3.ForAll(bound_vars, props >> BoolSort().cast(body))
 
 def Exists(bound_vars, body):
-    props = [g for v in bound_vars
-                 for g in (v.guards() if isinstance(v, IGuarded) else [])]
+    props = IGuarded.guards(bound_vars)
     return z3.Exists(bound_vars, props & BoolSort().cast(body))
 
 fresh_idx = iter(range(0xffff))
@@ -35,6 +34,19 @@ def quantifier_core(sort: SortRef | [SortRef], fbody: Callable[..., ExprRef], mn
     # this is a nasty trick to get variables with the same mnemonic.
     # these then go through alpha renaming in order to make sense
     return alpha_renaming(z3_quant(vs, quant(vz, fbody(*vz)).body()))
+
+def popcnt(*bools: [BoolRef]):
+    return Sum(*(If(v, 1, 0) for v in bools))
+
+def one_of(*bools: [BoolRef]):
+    '''valuates to `True` iff exactly one of `bools` is true.'''
+    #return popcnt(*bools) == 1  # - this also works but is more prone to `unknown`s
+    match len(bools):
+        case 0: return BoolVal(False)
+        case 1: return bools[0]
+        case 2: return bools[0] ^ bools[1]
+        case _:
+            return If(bools[0], Not(Or(*bools[1:])), one_of(*bools[1:]))
 
 ##
 # Set operations and properties
