@@ -1,6 +1,9 @@
 import z3
+import z3_monkey
 from dataclasses import dataclass
 from typing import Callable
+from building_blocks.list import List, ListSingleton, Sublist, ListSorted, ListConcat, Nth
+from building_blocks.props import Exists, ForAll
 
 @dataclass(frozen=True, slots=True)
 class CannotSolve:
@@ -63,28 +66,50 @@ def diagram(m: z3.ModelRef) -> dict[z3.ExprRef, z3.ExprRef]:
     }
 
 
-S = z3.DeclareSort('S')
-x, y, z = z3.Consts('x y z', S)
-i, j = z3.Ints('i j')
-a, b = z3.Array('a', z3.IntSort(), S), z3.Array('b', z3.IntSort(), S)
+# S = z3.DeclareSort('S')
+S = z3.IntSort()
+x, y, z, a = z3.Consts('x y z a', S)
+l1, l2, l3 = List('l₁', S), List('l₂', S), List('l₃', S)
+a_singleton = List('a_singleton', S)
 s = z3.Solver()
-s.add([z3.Exists([i], v == a[i]) for v in [x, y, z]])
+s.add(
+    Sublist(l1, l2),
+    ListSingleton(a, a_singleton),
+    ListConcat(l1, a_singleton, l3),
+    ForAll([x], z3.Implies(l1.contains(x), x <= a)),
+    l2.contains(a),
+    ListSorted(l2),
+    *l1.guards(), *l2.guards(), *l3.guards(),
+)
 s.set("timeout", 1000)
 def badness(candidate: z3.ModelRef):
-    i = z3.Int('i')
-    s = z3.Solver()
-    s.add(*(var == value for var, value in diagram(candidate).items()))
-    s.add(a[i] == a[i + 1])
-    s.add(0 <= i, i < 100)
-    r = s.check()
-    if r == z3.sat:
-        i = s.model().eval(i, model_completion=True).py_value()
-        assert isinstance(i, int)
-        return a[i] != a[i + 1]
-    elif r == z3.unsat:
-        return None
-    else:
-        assert r == z3.unknown
-        return CannotSolve(s.reason_unknown())
-c = Cegis(s, badness)
-print(c.solve())
+    """ bad if l3 is a sublist of l2 """
+    l3_, l2_ = (l @ candidate for l in (l3, l2))
+    if len(l3_) > len(l2_): return None
+    mapping = {}
+    i_l3 = 0
+    for i_l2, x_l2 in enumerate(l2_):
+        if i_l3 >= len(l3_): break
+        x_l3 = l3_[i_l3]
+        if x_l2 == x_l3:
+            mapping[i_l3] = i_l2
+            i_l3 += 1
+    is_sublist = i_l3 == len(l3_)
+    if not is_sublist: return None
+    return z3.Implies(
+        l3.len == len(l3_),
+        z3.Not(z3.And(
+            Nth(l3[i], j, l2)
+            for i, j in mapping.items()
+        )),
+    )
+for n in range(100):
+    s.push()
+    s.add(l1.len < n, l2.len < n, l3.len < n)
+    c = Cegis(s, badness)
+    r = c.solve()
+    print(r)
+    if isinstance(r, z3.ModelRef):
+        print(l1 @ r, l2 @ r, l3 @ r)
+    input()
+    s.pop()
