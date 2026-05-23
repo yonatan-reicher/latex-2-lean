@@ -1,5 +1,5 @@
 import z3
-from z3 import Const, Consts, BoolSort, BoolVal, SortRef, ExprRef, \
+from z3 import Const, Consts, BoolSort, BoolVal, BoolRef, SortRef, ExprRef, \
                And, Or, Not, If, Map, Distinct, K
 from collections.abc import Callable
 
@@ -20,13 +20,13 @@ def Exists(bound_vars, body):
 fresh_idx = iter(range(0xffff))
 
 
-def Prod(sort: SortRef | [SortRef], fbody: Callable[..., ExprRef], mnemonic='μ'):
+def Prod(sort: SortRef | list[SortRef], fbody: Callable[..., ExprRef], mnemonic='μ'):
     return quantifier_core(sort, fbody, mnemonic, ForAll, z3.ForAll)
 
-def Sig(sort: SortRef | [SortRef], fbody: Callable[..., ExprRef], mnemonic='μ'):
+def Sig(sort: SortRef | list[SortRef], fbody: Callable[..., ExprRef], mnemonic='μ'):
     return quantifier_core(sort, fbody, mnemonic, Exists, z3.Exists)
 
-def quantifier_core(sort: SortRef | [SortRef], fbody: Callable[..., ExprRef], mnemonic,
+def quantifier_core(sort: SortRef | list[SortRef], fbody: Callable[..., ExprRef], mnemonic,
                     quant, z3_quant):
     if not isinstance(sort, list): sort = [sort]
     vz = [promote(f'tmp${fresh_idx.__next__()}', s) for s in sort]
@@ -35,10 +35,10 @@ def quantifier_core(sort: SortRef | [SortRef], fbody: Callable[..., ExprRef], mn
     # these then go through alpha renaming in order to make sense
     return alpha_renaming(z3_quant(vs, quant(vz, fbody(*vz)).body()))
 
-def popcnt(*bools: [BoolRef]):
+def popcnt(*bools: list[BoolRef]):
     return Sum(*(If(v, 1, 0) for v in bools))
 
-def one_of(*bools: [BoolRef]):
+def one_of(*bools: list[BoolRef]):
     '''valuates to `True` iff exactly one of `bools` is true.'''
     #return popcnt(*bools) == 1  # - this also works but is more prone to `unknown`s
     match len(bools):
