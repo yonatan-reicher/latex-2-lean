@@ -116,6 +116,15 @@ private partial def binaryExpr : T Option Formula := do
     return .binOp lhs op rhs
 
 
+private partial def forall_ : T Option Formula := do
+  let start ← range
+  -- TODO: Parse multiple binders.
+  let binder ← binder
+  popEq (.symbol' ",") <|> throw (start ∪ (←range), "Expected ',' after binder in '\\forall'")
+  let rhs ← expr
+  return .forall_ #[binder] rhs (start ∪ rhs.range)
+
+
 private partial def atom : T Option Formula := do
   let t ← pop
   match t.kind with
@@ -166,6 +175,7 @@ private partial def atom : T Option Formula := do
     popEq (Token.Kind.symbol' "}")
     <|> throw (r, r"A '\set{' was not closed with a '}'")
     return inner r
+  | .command' "forall" => forall_
   | Token.Kind.symbol' r"(" =>
     let inner ← commaSeparated "an expression" "tuple" expr
     let r := t.range ∪ (← range)

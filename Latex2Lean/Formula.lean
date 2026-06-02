@@ -116,6 +116,7 @@ inductive Formula where
   | simpleSet (kind : SetKind) (elements : Array Formula) (range : Range)
   | mapSet (kind : SetKind) (lhs : Formula) (binders : Array Formula.Binder) (range : Range)
   | tuple (elements : Array Formula) (range : Range)
+  | forall_ (binders : Array Formula.Binder) (rhs : Formula) (range : Range)
   deriving Inhabited, BEq, Repr
 
 inductive Formula.Binder where
@@ -136,6 +137,7 @@ partial def Formula.WF : Formula → Bool
   | .simpleSet _ elements _ => elements.all WF
   | .mapSet _ lhs binders _ => lhs.WF ∧ binders.all Binder.WF
   | .tuple elements _ => elements.size > 1 ∧ elements.all WF
+  | .forall_ binders rhs _ => binders.size > 1 ∧ binders.all Binder.WF ∧ rhs.WF
 
 partial def Formula.Binder.WF : Formula.Binder → Bool
   | .in_ _ inner => inner.WF
@@ -151,6 +153,7 @@ def Formula.range : Formula → Range
   | .simpleSet _ _ r => r
   | .mapSet _ _ _ r => r
   | .tuple _ r => r
+  | .forall_ _ _ r => r
 
 
 mutual
@@ -169,6 +172,12 @@ partial def Formula.toString : Formula → String
     s!"\\\{ {lhs.toString} \\mid {", ".intercalate (binders.toList.map Formula.Binder.toString)} \\}"
   | .tuple elements _ =>
     s!"({", ".intercalate (elements.toList.map Formula.toString)})"
+  | .forall_ #[binder] rhs _ =>
+    s!"\\forall {binder.toString}, {rhs.toString}"
+  | .forall_ binders rhs _ =>
+    binders.toList.map (s!"({·.toString})")
+    |> " ".intercalate
+    |> (s!"\\forall {·}, {rhs.toString}")
 
 partial def Formula.Binder.toString : Formula.Binder → String
   | .in_ name set => s!"{show String from name} \\in {set.toString}"

@@ -46,6 +46,8 @@ partial def Formula.toNode : Formula → Node
   | .simpleSet _ elements _ => ⟨"new-set", elements.toList.map toNode⟩
   | .mapSet _ lhs binders _ => ⟨"map", lhs.toNode :: binders.toList.map Formula.Binder.toNode⟩
   | .tuple elements _ => ⟨"tuple", elements.toList.map toNode⟩
+  | .forall_ binders rhs _ =>
+    ⟨"forall", binders.toList.map (·.toNode) ++ [rhs.toNode]⟩
 
 partial def Formula.Binder.toNode : Formula.Binder → Node
   | .in_ name set => ⟨"in", [⟨String.mk name.toList, []⟩, set.toNode]⟩

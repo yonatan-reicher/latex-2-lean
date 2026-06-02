@@ -166,6 +166,25 @@ private partial def binderToExists : Formula.Binder → (rhs : M Expr) → M Exp
       mkAnd (← mkAppM ``Membership.mem #[set, fvar]) (← rhs)
 
 
+/-- Translate a binder to an exists expression. -/
+@[inline]
+private partial def binderToForall : Formula.Binder → (rhs : M Expr) → M Expr
+  | .in_ name set, rhs => do
+    -- First translate the set, and extract the element type.
+    let set ← asWhatever set
+    check set -- Must call this before the next action!
+    let type ← inferType set
+    let some elementType ← getSetElement type
+      | throwError m!"{set} must be a set, but had type {type}."
+    -- Declare the variable!
+    withLocalDeclD (.mkSimple name) elementType fun fvar => do
+      -- And declare a variable for the assumption that it is in the set.
+      let inAssumption ← mkAppM ``Membership.mem #[set, fvar]
+      withLocalDeclD `h inAssumption fun hFVar => do
+        -- Now make some syntax.
+        mkForallFVars #[fvar, hFVar] $ ← rhs
+
+
 private partial def asNumber : F → M Expr
   | .var name .. => varToExpr name
   | .number n .. => return mkNatLit n
@@ -320,6 +339,19 @@ private partial def asTuple : F → M Expr
   | f => throwError s!"unsupported formula for translation to tuple: {f}"
 
 
+private partial def asProp : F → M Expr
+  | .var name .. => varToExpr name
+  | f@(.binOp ..) => asWhatever f
+  | .forall_ binders rhs _ => do
+    let f ← binders.foldr
+      (β := M Expr)
+      (init := asProp rhs)
+      fun b acc => binderToForall b acc
+    check f
+    return f
+  | f => throwError s!"unsupported formula for translation to proposition: {f}"
+
+
 private partial def asWhatever (f : F) : M Expr :=
   match f with
   | .emptySet .set .. => asSet f
@@ -342,6 +374,7 @@ private partial def asWhatever (f : F) : M Expr :=
   | .mapSet .set .. => asSet f
   | .mapSet .multiset .. => asMultiset f
   | .tuple .. => asTuple f
+  | .forall_ .. => asProp f
 
 
 end
