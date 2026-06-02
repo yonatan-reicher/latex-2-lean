@@ -15,4 +15,6 @@ $D \subseteq (H \cup V)$
 
 ### Assumption
 Assume $D$ is a cover of our $10 \times 10$ board:
-($in^2$ is the relation $a \in^2 c \iff \exists b \in c, a \in b$)
+($\in^2$ is the relation $a \in^2 c \iff \exists b \in c, a \in b$)  
+$\forall d_1, d_2 \in D, d_1 \cap d_2 = \varnothing$  
+$\set{p \mid p \in^2 D} = 0..9 \times 0..9$  
