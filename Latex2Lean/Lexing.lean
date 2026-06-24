@@ -33,7 +33,7 @@ private def manyChars (pred : Char → Bool) : Text.M (Array Char) := do
   |> (· == ("hello".toList.toArray, ⟨1, 6⟩, 5))
 
 
-private def word : Text.M Token.Kind := .word <$> manyChars Char.isAlpha
+private def word : Text.M Token.Kind := .word <$> manyChars Char.isAlphanum
 
 
 private def number : Text.M Token.Kind := do
