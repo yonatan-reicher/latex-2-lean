@@ -27,6 +27,7 @@ support \and's and \exists', we could just define it as
 ## TODO
 
 In axioms, introduce variables if they don't exist
+Use lean's unique name generator to generate axioms.
 Make things types instead
 Abbreviations (Custom notation)
 Sum function
