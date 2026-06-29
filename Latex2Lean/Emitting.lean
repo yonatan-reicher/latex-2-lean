@@ -6,7 +6,7 @@ import Lean
 
 namespace Latex2Lean
 
-open Lean (addDecl instantiateMVars)
+open Lean (addDecl instantiateMVars getDeclNGen getEnv)
 open Lean.Meta (inferType check isProp)
 open Lean.Elab (TermElabM)
 
@@ -24,7 +24,11 @@ def emit : LeanCmd → TermElabM Unit
       hints := default -- TODO
       safety := .safe
     }
-  | .axiom_ name e => do
+  | .axiom_ name? e => do
+    let name ← match name? with
+      | some name => pure name
+      | none =>
+        pure <| Prod.fst <| (← getDeclNGen).mkUniqueName (← getEnv) `axiom
     check e
     if not <| ← isProp e then
       let t ← inferType e

@@ -397,8 +397,7 @@ private def axiom_ (f : F) : M LeanCmd := do
   -- TODO: Turns out that `getUnusedName` only returns a name not used in the
   -- local context, so we can still get name clashes (because our names get
   -- added to the global scope). Fix this!
-  let name := (← getLCtx).getUnusedName (.mkSimple "h")
-  return .axiom_ name $ ← asWhatever f
+  return .axiom_ none $ ← asWhatever f
 
 private def categorizedFormula : CF → M (Option LeanCmd)
   | .definition name _ e => return some (← definition name e)
