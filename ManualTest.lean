@@ -2,7 +2,7 @@ import Latex2Lean
 import Mathlib
 
 
-axiom D {α} : Set α
+axiom D : Set (Set (Nat × Nat))
 define_latex file verbose "proof-adjusted.md"
 
 
