@@ -29,6 +29,7 @@ atom ::=
   | "\mset" "{" setInsides "}"
   | "(" ( expr "," )* expr ")"
   | word // variable name
+  // TODO: add forall?
 
 setInsides ::=
   | // empty set
