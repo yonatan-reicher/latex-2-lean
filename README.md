@@ -32,3 +32,5 @@ Abbreviations (Custom notation)
 Sum function
 What to do about mappings with filters that are more than membership? maybe
 special case exists?
+Add an \exists expression
+In setInsides, allow either binders of predicates
