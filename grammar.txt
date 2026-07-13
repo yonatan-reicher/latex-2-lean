@@ -12,7 +12,14 @@ error ::= \S+
 
                                     Parsers
 
-expr ::= binaryExpr
+expr ::= equalityExpr
+
+equalityExpr ::= addOrSubExpr ( ("=" | "\neq" | "\leq" | "\geq" | "<" | ">") addOrSubExpr)*
+
+addOrSubExpr ::= termExpr ( ("+" | "-" | "\cup" | "\cap" | "\setminus") termExpr )*
+
+termExpr ::= atom ( ("*" | "/" | \"times" | "\"
+
 binaryExpr ::=
   | atom ( binOp atom )*
 
@@ -33,5 +40,12 @@ atom ::=
 
 setInsides ::=
   | // empty set
-  | expr "\mid" ( expr "," )* expr // map
+  | expr "\mid" ( binderOrCond "," )* binderOrCond // map
   | ( expr "," )* expr // simple set
+
+binder ::=
+  | word "\in" expr // TODO: shouldn't this be an atom instead of an expr?
+  | "\exists" binder "," binder
+
+binderOrCond ::= binder | expr
+
