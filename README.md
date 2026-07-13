@@ -9,7 +9,7 @@ regular Lean definitions. Specifically, the goal is to add the definitions,
 letting you explore them formally inside of Lean (translating whole proofs does
 not seem feasible)
 
-## Currently Working On
+## On Adding Custom Notation
 
 Thinking about how to add custom notation. We said that we should start by just
 supporting custom notation for binary operators. In our example, we had:
@@ -23,6 +23,13 @@ Simplest syntax to make our life easiest:
 $a \in^2 b: \exists c, a \in c \and c \in b$. Even simpler, because we don't
 support \and's and \exists', we could just define it as
 :a \in^2 b: a \in \set{ a \mid c \in b }
+
+## Currently Working On
+
+* refactoring static analysis to use egglog instead of souffle
+  (branch egglog-analysis)
+* rewriting the grammar, than we also need to update the parser (branch
+  grammar-update)
 
 ## TODO
 
