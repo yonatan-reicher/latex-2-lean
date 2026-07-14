@@ -2,4 +2,4 @@ test:
 	pytest
 
 run:
-	python3 -m analysis
+	python3 -m analysis test.csv
