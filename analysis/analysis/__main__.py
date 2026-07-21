@@ -8,7 +8,6 @@ from sys import argv
 @dataclass(frozen=True, slots=True)
 class CliArguments:
     input_file: Path
-
     @staticmethod
     def parse() -> CliArguments:
         if len(argv) != 2:
