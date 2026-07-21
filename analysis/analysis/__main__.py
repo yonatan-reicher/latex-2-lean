@@ -10,6 +10,7 @@ class CliArguments:
     input_file: Path
     @staticmethod
     def parse() -> CliArguments:
+        """ Constructs the object from `sys.argv` """
         if len(argv) != 2:
             bad_exit("Usage: python -m egglog <input_file>")
         return CliArguments(input_file=Path(argv[1]))
