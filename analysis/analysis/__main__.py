@@ -1,5 +1,6 @@
 from analysis.my_egraph import MyEGraph
 from analysis.utils import bad_exit
+import analysis.node
 from dataclasses import dataclass
 from pathlib import Path
 from sys import argv
