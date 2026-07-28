@@ -1,5 +1,8 @@
 Let $I = \{ (a, b) \mid a \in Int, b \in Int, a <= b \}$.
 A Multisegment is a mulitset of elements in $I$.
+$$
+Multisegment = \mset{ s \mid s \in I }
+$$
 
 For $\alpha \in Multisegment$,
 let $\alpha \in Ladder \iff << \in Linord(\alpha)$

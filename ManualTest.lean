@@ -13,3 +13,6 @@ Let $x = \sum \mset{ 1 }$
 
 "
 example : x = 1 := by decide
+
+
+define_latex file verbose "ladder.md"
