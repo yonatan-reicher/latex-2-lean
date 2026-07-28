@@ -1,4 +1,4 @@
-from z3 import SortRef, ArrayRef, ArithRef, ExprRef, Int, Array, IntSort, ModelRef, BoolRef, And, Implies, BoolSort, Lambda, If
+from z3 import SortRef, ArrayRef, ArithRef, ExprRef, Int, Array, IntSort, ModelRef, BoolRef, And, Implies, BoolSort, Lambda, If, Not
 from .base import EvalAt, IGuarded
 from building_blocks.mapping import Mapping, MappingSort
 from building_blocks.set import SetRef, Set
@@ -107,6 +107,21 @@ def Sublist(l1: ListRef, l2: ListRef) -> BoolRef:
             Implies(i < l1.len - 1, f[i] < f[i + 1]),
         ))
     )
+
+def NotSublist(l1: ListRef, l2: ListRef) -> BoolRef:
+    i = Index('i', l1.len)
+    f = Mapping('f', MappingSort(l1.dom, l2.dom))
+    return ForAll([f],
+        Exists([i], Not(And(
+            # The function is bounded by l₂'s range
+            And(0 <= f[i], f[i] < l2.len),
+            # The function sends indexes in l₁ to equal elements in l₂
+            l1.arr[i] == l2.arr[f[i]],
+            # The function is increasing
+            Implies(i < l1.len - 1, f[i] < f[i + 1]),
+        )))
+    )
+
 
 def ListConcat(l1: ListRef, l2: ListRef, l: ListRef) -> BoolRef:
     i = Index('i', l.len)
