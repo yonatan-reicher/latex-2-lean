@@ -15,19 +15,35 @@ from egglog import *
 AstId = i64
 AstIdLike = i64Like
 
+N_AST_KINDS = 0
+
+def _ast_kind_ctor[T](f: T) -> T:
+    global N_AST_KINDS
+    N_AST_KINDS += 1
+    return f
+
+
 class AstKind(Expr):
     """
     An algebraic data-type that holds the type of an AST node, and it's
     arguments.
     """
+    @_ast_kind_ctor
     @classmethod
     def var(cls, name: StringLike) -> AstKind: ...
+    @_ast_kind_ctor
     @classmethod
     def num(cls, n: i64Like) -> AstKind: ...
-    def __add__(self, other: AstKind) -> AstKind: ...
-    def __sub__(self, other: AstKind) -> AstKind: ...
+    @_ast_kind_ctor
     @classmethod
-    def set_expr(cls, elements: Vec[AstKind]) -> AstKind: ...
+    def add(cls, this: AstIdLike, other: AstIdLike) -> AstKind: ...
+    @_ast_kind_ctor
+    @classmethod
+    def sub(cls, this: AstIdLike, other: AstIdLike) -> AstKind: ...
+    @_ast_kind_ctor
+    @classmethod
+    def set_expr(cls, elements: Vec[AstId]) -> AstKind: ...
+    @_ast_kind_ctor
     @classmethod
     def error(cls, msg: StringLike) -> AstKind: ...
 
