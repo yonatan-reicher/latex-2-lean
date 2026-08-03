@@ -1,6 +1,7 @@
 from pathlib import Path
 from analysis.ast import Ast, AstKind, AstId
 from analysis.utils import bad_exit
+from egglog import Vec
 
 
 def parse_file(file: Path) -> dict[int, Ast]:
@@ -46,6 +47,14 @@ def parse_file(file: Path) -> dict[int, Ast]:
         def check_two_id_args() -> tuple[AstId, AstId]:
             arg1_str, arg2_str = check_two_args()
             return ast_id(arg1_str), ast_id(arg2_str)
+        def check_many_id_args() -> tuple[AstId, ...]:
+            return tuple(
+                ast_id(a)
+                for a in (
+                    args.split(',') if args is not None
+                    else []
+                )
+            )
         # Actual code
         if kind_str == "var":
             return AstKind.var(check_one_arg())
@@ -55,6 +64,8 @@ def parse_file(file: Path) -> dict[int, Ast]:
             return AstKind.add(*check_two_id_args())
         elif kind_str == "sub":
             return AstKind.sub(*check_two_id_args())
+        elif kind_str == "set":
+            return AstKind.set(Vec(*check_many_id_args()))
         else:
             return AstKind.error(f"Unknown kind '{kind_str}'")
 

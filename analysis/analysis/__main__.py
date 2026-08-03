@@ -2,6 +2,7 @@ from analysis.ast import ast_rules
 from analysis.my_egraph import MyEGraph
 from analysis.utils import bad_exit
 from analysis.input import parse_file
+from analysis.rules import all as all_rules
 from dataclasses import dataclass
 from egglog import run
 from pathlib import Path
@@ -26,6 +27,6 @@ asts = parse_file(args.input_file)
 
 egraph = MyEGraph()
 for a in asts.values(): egraph.register(a)
-for r in ast_rules: egraph.register(r)
+for r in all_rules: egraph.register(r)
 egraph.run(run().saturate())
 egraph.display()
