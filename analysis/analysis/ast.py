@@ -59,6 +59,7 @@ class Ast(Expr):
         ...
     def used_as_finite(self) -> Unit:
         """ Is this used somewhere as if it were a finite set? """
+        ...
 
 def set_ast_id_and_kind(
     id: AstId,
