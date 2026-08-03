@@ -5,9 +5,8 @@ Provides the `Ast` class, along with `ast_rules` that needs to be added to the
 e-graph when using.
 """
 
-from analysis.utils import sorry
 from egglog import *
-from typing import Callable, TypeVar, Concatenate
+from typing import Callable, Concatenate
 
 # Disabling a false-negative type-checking error.
 # mypy: disable-error-code="empty-body"
@@ -72,3 +71,15 @@ def set_ast_id_and_kind(
 ast_rules = [
     set_ast_id_and_kind,
 ]
+
+def ast_to_id(ast: Ast) -> AstId:
+    """
+    In contrast to `Ast.id()`, this function expects an expression which is an
+    application of the `Ast` constructor, and returns the expression given as an
+    argument in the `id` position.
+    """
+    args = get_callable_args(ast, Ast)
+    if args is None: raise Exception(f"cannot call `ast_to_id` on '{ast}'")
+    match args[0]:
+        case int() as i: return i64(i)
+        case i: return i
