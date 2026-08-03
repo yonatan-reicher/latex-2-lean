@@ -1,5 +1,6 @@
-from analysis.ast import Ast, AstKind, AstId, AstIdLike
+from analysis.ast import Ast, AstKind, AstId, AstIdLike, ast_rules
 from analysis.my_egraph import MyEGraph
+from egglog import run
 from analysis.utils import bad_exit
 from dataclasses import dataclass
 from pathlib import Path
@@ -108,8 +109,14 @@ if header_row != expected_header_row:
     bad_exit(f"Given file '{args.input_file}' had an invalid header row - "
              f"expected '{expected_header_row}', but got '{header_row}'")
 asts: dict[int, Ast] = {}
-split_lines = [parse_row(i, line, asts) for i, line in enumerate(lines)]
+ast_list = [parse_row(i, line, asts) for i, line in enumerate(lines)]
 
 print("🦮")
 
-print(split_lines)
+print(ast_list)
+
+egraph = MyEGraph()
+for a in ast_list: egraph.register(a)
+for r in ast_rules: egraph.register(r)
+egraph.run(run().saturate())
+egraph.display()
