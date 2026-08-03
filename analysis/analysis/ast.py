@@ -70,7 +70,7 @@ def set_ast_id_and_kind(
 ):
     # yield rule(Ast(id, kind)).then(union(Ast(id, kind).id()).with_(id))
     yield rule(Ast(id, kind)).then(set_(Ast(id, kind).id()).to(id))
-    yield rule(Ast(id, kind)).then(set_(Ast(id, kind).kind()).to(kind))
+    yield rule(Ast(id, kind)).then(union(Ast(id, kind).kind()).with_(kind))
 
 ast_rules = [
     set_ast_id_and_kind,
