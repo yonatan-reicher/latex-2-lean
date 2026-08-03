@@ -1,8 +1,8 @@
 from analysis.ast import Ast, AstKind, AstId, AstIdLike, ast_rules
 from analysis.my_egraph import MyEGraph
-from egglog import run
 from analysis.utils import bad_exit
 from dataclasses import dataclass
+from egglog import run
 from pathlib import Path
 from sys import argv
 from typing import Any, Callable
