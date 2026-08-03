@@ -7,6 +7,7 @@ e-graph when using.
 
 from analysis.utils import sorry
 from egglog import *
+from typing import Callable, TypeVar, Concatenate
 
 # Disabling a false-negative type-checking error.
 # mypy: disable-error-code="empty-body"
@@ -17,11 +18,12 @@ AstIdLike = i64Like
 
 N_AST_KINDS = 0
 
-def _ast_kind_ctor[T](f: T) -> T:
+def _ast_kind_ctor[**A, B, Self](
+        f: Callable[Concatenate[Self, A], B]
+        ) -> Callable[A, B]:
     global N_AST_KINDS
     N_AST_KINDS += 1
-    return f
-
+    return classmethod(f) #type: ignore
 
 class AstKind(Expr):
     """
@@ -29,22 +31,16 @@ class AstKind(Expr):
     arguments.
     """
     @_ast_kind_ctor
-    @classmethod
     def var(cls, name: StringLike) -> AstKind: ...
     @_ast_kind_ctor
-    @classmethod
     def num(cls, n: i64Like) -> AstKind: ...
     @_ast_kind_ctor
-    @classmethod
     def add(cls, this: AstIdLike, other: AstIdLike) -> AstKind: ...
     @_ast_kind_ctor
-    @classmethod
     def sub(cls, this: AstIdLike, other: AstIdLike) -> AstKind: ...
     @_ast_kind_ctor
-    @classmethod
     def set(cls, elements: Vec[AstId]) -> AstKind: ...
     @_ast_kind_ctor
-    @classmethod
     def error(cls, msg: StringLike) -> AstKind: ...
 
 class Ast(Expr):
