@@ -31,5 +31,10 @@ for r in all_rules: egraph.register(r)
 egraph.run(run().saturate())
 # egraph.display()
 
-ids = [int(ast_to_id(ast)) for ast, in egraph.relation_elements(Ast.is_finite)]
-print(ids)
+is_finite = [ int(ast_to_id(ast))
+              for ast, in egraph.relation_elements(Ast.is_finite) ]
+used_as_finite = [ int(ast_to_id(ast))
+                   for ast, in egraph.relation_elements(Ast.used_as_finite) ]
+print('id,is finite,used as finite')
+for id in asts:
+    print(f"{id},{id in is_finite},{id in used_as_finite}")
