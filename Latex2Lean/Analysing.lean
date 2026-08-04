@@ -32,18 +32,21 @@ private def BinOp.toNodeName : BinOp → String
   | .times => "times"
 
 
-mutual
+abbrev commaSep {α} [ToString α] (l : List α) : String := ",".intercalate <| l.map toString
+abbrev commaSepIds {α} [ToString α] (l : List Formula) := commaSep <| l.map id
 
-partial def Formula.toNode : Formula → Node
-  | .emptySet _ _ => ⟨"new-set", []⟩
-  | .var name _ => ⟨String.mk name.toList, []⟩
-  | .number n _ => ⟨ToString.toString n, []⟩
-  | .app ⟨"\\abs", _⟩ arg => ⟨"abs", [arg.toNode]⟩
-  | .app ⟨"\\name", _⟩ arg => ⟨"abs", [arg.toNode]⟩
-  | .app ⟨"\\sum", _⟩ arg => ⟨"sum", [arg.toNode]⟩
-  | .app ⟨name, _⟩ _ => panic! s!"don't know how to turn function {name} to node"
-  | .binOp left op right => ⟨op.toNodeName, [left.toNode, right.toNode]⟩
-  | .simpleSet _ elements _ => ⟨"new-set", elements.toList.map toNode⟩
+
+def Formula.toAnalysisInputLine (f : Formula) : String :=
+  s!"{show Nat from f.id},{dispatch f.kind}"
+where
+  dispatch : Kind → String
+  | .emptySet _ _ => s!"set"
+  | .var name _ => s!"var,{name}"
+  | .number n _ => s!"num,{n}"
+  | .app f x => s!"app,{f.name},{x.id}"
+  | .binOp left op right => s!"op,{op},{left.id},{right.id}"
+  | .simpleSet .set elements _ => s!"set,{commaSepIds elements.toList}"
+  | .mapSet _ lhs binders _ => s!"map,{lhs.id},{commaSepIds <| binders.toList.map (·.id)}"
   | .mapSet _ lhs binders _ => ⟨"map", lhs.toNode :: binders.toList.map Formula.Binder.toNode⟩
   | .tuple elements _ => ⟨"tuple", elements.toList.map toNode⟩
   | .forall_ binders rhs _ =>

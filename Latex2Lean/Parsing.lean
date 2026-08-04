@@ -12,10 +12,13 @@ namespace Latex2Lean
 def Error := Range × String
 deriving instance DecidableEq, Repr, BEq for Error
 
+abbrev FId := Formula.Id
+abbrev NextId := FId
+
 instance : Lean.ToMessageData Error where
   toMessageData self := m!"{self.1} {self.2}"
 
-def T m := StateT (Subarray Token) (ExceptT Error m)
+def T m := StateT (Subarray Token) (StateT NextId (ExceptT Error m))
 abbrev M := T Id
 
 variable {m} [Monad m]
@@ -23,20 +26,26 @@ instance : Monad (T m) := unfold T in inferInstance
 instance : MonadExcept Error (T m) := unfold T in inferInstance
 instance [Alternative m] : Alternative (T m) := unfold T in inferInstance
 instance {ε} [MonadExceptOf ε m] : MonadExceptOf ε (T m) := unfold T in inferInstance
+instance : MonadStateOf NextId (T m) where
+  get := fun tokens nextId => return ((nextId, tokens), nextId)
+  set newNextId := fun tokens _nextId => return (((), tokens), newNextId)
+  modifyGet f := fun tokens nextId =>
+    let (ret, nextId) := f nextId
+    return ((ret, tokens), nextId)
 
 instance : MonadLift (T Id) (T m) where
   monadLift x :=
-    fun tokens =>
-      match x.run tokens with
+    fun tokens nextId =>
+      match x.run tokens |>.run nextId with
       | .ok (ret, tokens) => pure (ret, tokens)
       | .error e => throw e
 
 def T.maybe {α} (x : T Option α) : M (Option α) :=
-  fun tokens =>
-    match x tokens with
-    | some (.ok (ret, tokens)) => .ok (some ret, tokens)
+  fun tokens nextId =>
+    match x tokens nextId with
+    | some (.ok ((ret, tokens), nextId)) => .ok ((some ret, tokens), nextId)
     | some (.error e) => .error e
-    | none => .ok (none, tokens)
+    | none => .ok ((none, tokens), nextId)
 
 def rest : M (Subarray Token) := unfold M T in get
 def peek : T Option Token := do
@@ -44,9 +53,9 @@ def peek : T Option Token := do
   | some t => return t
   | none => failure
 def pop : T Option Token :=
-  fun tokens => show Option _ from do
+  fun tokens nextId => show Option _ from do
     let t ← tokens[0]?
-    return .ok (t, tokens[1:])
+    return .ok ((t, tokens[1:]), nextId)
 
 def popEq (kind : Token.Kind) : T Option Unit := do
   let t ← peek
@@ -54,18 +63,20 @@ def popEq (kind : Token.Kind) : T Option Unit := do
   then ignore <$> pop
   else failure
 
+def popId : T Id FId := modifyGetThe NextId fun nextId => (nextId, Nat.add nextId 1)
+
 def range : M Range := do
   match ← peek.maybe with
   | none => return default
   | some t => return t.range
 
 
-private def setFromRange (a b : Nat) (r : Range) : Formula :=
+private def setFromRange (a b : Nat) (r : Range) : T Id Formula := do
   let len := b - a
   Array.range (len + 1)
-  |>.map (· + a)
-  |>.map (.number · r)
-  |> (.simpleSet .set · r)
+    |>.map (· + a) -- Add the starting to all indices to get the numbers
+    |>.mapM (fun n => return Formula.mk (← popId) <| .number n r) -- Make number nodes
+    |>.map (Formula.mk (← popId) <| .simpleSet .set · r) -- Put the array in a set node
 
 
 private partial def commaSeparated
@@ -98,6 +109,9 @@ where toTokenKind : BinOp → Token.Kind
 #guard binaryOperator.toTokenKind .times = .command "times"
 
 
+local macro "returnNewNode " t:term:min : doElem => `(doElem|return Formula.mk (← popId) $t)
+
+
 mutual
 
 
@@ -113,7 +127,7 @@ private partial def binaryExpr : T Option Formula := do
   | some op =>
     let some rhs ← binaryExpr.maybe
       | throw (opRange, "Expected an expression after a binary operator")
-    return .binOp lhs op rhs
+    returnNewNode .binOp lhs op rhs
 
 
 private partial def forall_ : T Option Formula := do
@@ -122,31 +136,31 @@ private partial def forall_ : T Option Formula := do
   let binder ← binder
   popEq (.symbol' ",") <|> throw (start ∪ (←range), "Expected ',' after binder in '\\forall'")
   let rhs ← expr
-  return .forall_ #[binder] rhs (start ∪ rhs.range)
+  returnNewNode .forall_ #[binder] rhs (start ∪ rhs.range)
 
 
 private partial def atom : T Option Formula := do
   let t ← pop
   match t.kind with
   | Token.Kind.command' "emptyset"
-  | Token.Kind.command' "varnothing" => return .emptySet .set t.range
+  | Token.Kind.command' "varnothing" => returnNewNode .emptySet .set t.range
   | Token.Kind.number n =>
     (do
       let t2 ← peek
       popEq (Token.Kind.symbol' "..")
       match ←pop.maybe with
       | some { kind := Token.Kind.number m, range := r } =>
-        return setFromRange n m (t.range ∪ r)
+        setFromRange n m (t.range ∪ r)
       | _ =>
         throw (t.range ∪ t2.range, "Expected a number after '..'"))
-    <|> (do return .number n t.range)
+    <|> (do returnNewNode .number n t.range)
   | Token.Kind.command' "abs"
   | Token.Kind.command' "sum" =>
     let some inner ← atom.maybe
       | throw (t.range, r"Expected an expression atom after '\abs'")
     match t.kind with
-    | Token.Kind.command' "abs" => return .app ⟨"\\abs", t.range⟩ inner
-    | Token.Kind.command' "sum" => return .app ⟨"\\sum", t.range⟩ inner
+    | Token.Kind.command' "abs" => returnNewNode .app ⟨"\\abs", t.range⟩ inner
+    | Token.Kind.command' "sum" => returnNewNode .app ⟨"\\sum", t.range⟩ inner
     | _ => throw (t.range, "Invalid function name")
   | Token.Kind.symbol' "{" =>
     let some inner ← expr.maybe
@@ -161,7 +175,7 @@ private partial def atom : T Option Formula := do
     let inner := inner r
     popEq (Token.Kind.command' "}")
     <|> throw (r, r"A '\{' was not closed with an '\}'")
-    return inner
+    returnNewNode inner
   | Token.Kind.command' "set"
   | Token.Kind.command' "mset" =>
     let kind ← match t.kind with
@@ -174,7 +188,7 @@ private partial def atom : T Option Formula := do
     let r := t.range ∪ (←range)
     popEq (Token.Kind.symbol' "}")
     <|> throw (r, r"A '\set{' was not closed with a '}'")
-    return inner r
+    returnNewNode inner r
   | .command' "forall" => forall_
   | Token.Kind.symbol' r"(" =>
     let inner ← commaSeparated "an expression" "tuple" expr
@@ -184,15 +198,15 @@ private partial def atom : T Option Formula := do
     match h : inner.size with
     | 0 => throw (r, r"Tuples cannot have zero elements")
     | 1 => return inner[0]
-    | _ => return .tuple inner r
-  | Token.Kind.word name => return .var name t.range
+    | _ => returnNewNode .tuple inner r
+  | Token.Kind.word name => returnNewNode .var name t.range
   -- TODO: Maybe we want to just return none?
   | Token.Kind.command c => throw (t.range, s!"Invalid command '{c}'")
   | Token.Kind.symbol s => throw (t.range, s!"Invalid symbol '{s}'")
   | Token.Kind.error s => throw (t.range, s!"Lexing error: {s}")
 
 
-private partial def setInsides (kind : SetKind) : M (Range → Formula) := do
+private partial def setInsides (kind : SetKind) : M (Range → Formula.Kind) := do
   let some lhs ← expr.maybe
     | return .emptySet kind
   if (← popEq (Token.Kind.command' "mid") |>.maybe).isSome then
@@ -202,7 +216,7 @@ private partial def setInsides (kind : SetKind) : M (Range → Formula) := do
     return .mapSet kind lhs rhs
   else
     if (← popEq (Token.Kind.symbol' ",") |>.maybe).isNone then
-      return Formula.simpleSet kind #[lhs]
+      return .simpleSet kind #[lhs]
     let rest ← expressions
     let all := #[lhs] ++ rest
     return .simpleSet kind all
@@ -219,7 +233,7 @@ private partial def binder : T Option Formula.Binder := do
     <|> throw (t.range, r"Expected '\in' after binder variable name")
   let some rhs ← expr.maybe
     | throw (t.range ∪ (←range), r"Expected an expression after '\in' in a binder")
-  return .in_ name rhs
+  return .in_ (← popId) (← popId) name rhs
 
 -- setInsides ::=
 --   | // empty set
@@ -230,11 +244,11 @@ private partial def binder : T Option Formula.Binder := do
 end
 
 
-def parse : InlineMath.Kind → Subarray Token → Except Error Formula
-  | _kind, tokens =>
-    match expr tokens with
+def parse : InlineMath.Kind → Subarray Token → NextId → Except Error Formula
+  | _kind, tokens, firstId =>
+    match expr tokens firstId with
     | .error e => .error e
-    | .ok (f, rest) =>
+    | .ok ((f, rest), _) =>
       if h : rest.size = 0 then .ok f
       else
         have : NeZero rest.size := by exact { out := h }
@@ -247,4 +261,5 @@ def parse : InlineMath.Kind → Subarray Token → Except Error Formula
   parse
     .singleDollar
     #[ Token.mk (.word' "x") ⟨⟨0, 1⟩, ⟨2, 3⟩⟩ ]
-  == .ok (.var "x" ⟨⟨0, 1⟩, ⟨2, 3⟩⟩)
+    1
+  == .ok (.mk 1 <| .var "x" ⟨⟨0, 1⟩, ⟨2, 3⟩⟩)

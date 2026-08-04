@@ -97,13 +97,13 @@ inductive SetKind
   deriving Inhabited, DecidableEq, Repr
 
 
+def Formula.Id := Nat
+deriving instance DecidableEq, Inhabited, Repr, ToString for Formula.Id
+instance {n} : OfNat Formula.Id n := ⟨n⟩
+
 mutual
 
-/--
-A formula object is an Abstact Syntax Tree of the code inside an inline-math
-section of our text.
--/
-inductive Formula where
+inductive Formula.Kind where
   -- TODO: Replace names with Ident.
   | emptySet (kind : SetKind) (range : Range) -- TODO: Remove
   -- TODO: Add a data type for a name which is a string and a range.
@@ -119,15 +119,27 @@ inductive Formula where
   | forall_ (binders : Array Formula.Binder) (rhs : Formula) (range : Range)
   deriving Inhabited, BEq, Repr
 
+/--
+A formula object is an Abstact Syntax Tree of the code inside an inline-math
+section of our text.
+-/
+structure Formula where
+  id : Formula.Id
+  kind : Formula.Kind
+  deriving Inhabited, BEq, Repr
+
+
 inductive Formula.Binder where
-  | in_ (name : Array Char) (set : Formula)
+  | in_ (varId rootId : Formula.Id) (name : Array Char) (nameRange : Range) (set : Formula)
   deriving Inhabited, BEq, Repr
 
 end
 
 mutual
 
-partial def Formula.WF : Formula → Bool
+partial def Formula.WF (f : Formula) := f.kind.WF
+
+partial def Formula.Kind.WF : Kind → Bool
   | .emptySet _ _
   | .var _ _
   | .number _ _
@@ -140,11 +152,13 @@ partial def Formula.WF : Formula → Bool
   | .forall_ binders rhs _ => binders.size > 1 ∧ binders.all Binder.WF ∧ rhs.WF
 
 partial def Formula.Binder.WF : Formula.Binder → Bool
-  | .in_ _ inner => inner.WF
+  | .in_ _ _ _ inner => inner.WF
 
 end
 
-def Formula.range : Formula → Range
+mutual
+
+partial def Formula.Kind.range : Kind → Range
   | .emptySet _ r => r
   | .var _ r => r
   | .number _ r => r
@@ -155,10 +169,15 @@ def Formula.range : Formula → Range
   | .tuple _ r => r
   | .forall_ _ _ r => r
 
+partial def Formula.range (f : Formula) := f.kind.range
+
+end
 
 mutual
 
-partial def Formula.toString : Formula → String
+partial def Formula.toString (f : Formula) := f.kind.toString
+
+partial def Formula.Kind.toString : Kind → String
   | .emptySet _ _ => "\\emptyset"
   | .var name _ => s!"{show String from name}"
   | .number n _ => s!"{n}"
@@ -180,18 +199,43 @@ partial def Formula.toString : Formula → String
     |> (s!"\\forall {·}, {rhs.toString}")
 
 partial def Formula.Binder.toString : Formula.Binder → String
-  | .in_ name set => s!"{show String from name} \\in {set.toString}"
+  | .in_ _ _ name set => s!"{show String from name} \\in {set.toString}"
 
 end
 
 instance : ToString Formula := ⟨Formula.toString⟩
 instance : ToString Formula.Binder := ⟨Formula.Binder.toString⟩
 
-#guard
-  Formula.mapSet .set
-    (.binOp (.var "x" default) .plus (.number 1 default))
-    #[.in_ "x" $ .emptySet .set default
-    , .in_ "y" $ .simpleSet .set #[.number 5 default] default]
-    default
-  |>.toString
-  |> (· == r"\{ x + 1 \mid x \in \emptyset, y \in \{ 5 \} \}")
+-- #guard
+--   Formula.mk 1 <| Formula.Kind.mapSet .set
+--     (Formula.mk 2 <| Formula.Kind.binOp (.var "x" default) .plus (.number 1 default))
+--     #[.in_ "x" $ .emptySet .set default
+--     , .in_ "y" $ .simpleSet .set #[.number 5 default] default]
+--     default
+--   |>.toString
+--   |> (· == r"\{ x + 1 \mid x \in \emptyset, y \in \{ 5 \} \}")
+
+mutual
+
+def Formula.children (f : Formula) := f.kind.children
+
+def Formula.Kind.children : Kind → Array Formula × Array Binder
+  | .emptySet ..
+  | .var ..
+  | .number ..
+    => #[]
+  | .app _func arg => #[arg]
+  | .binOp left _op right => #[left, right]
+  | .simpleSet _ elements .. => elements
+  | .mapSet _ lhs binders .. => #[lhs] ++ binders.flatMap (·.children)
+  | .tuple elements .. => elements
+  | .forall_ binders rhs .. => binders.flatMap (·.children) ++ #[rhs]
+
+def Formula.Binder.children : Binder → Array Formula
+  | .in_ _ _ _ _ a => #[a]
+
+def Formula.Binder.toFormula : Binder → Formula
+  | .in_ varId rootId name nameRange set =>
+    .mk rootId <| .binOp (.mk varId <| .var name nameRange) .in_ set
+
+end
