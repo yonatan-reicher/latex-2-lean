@@ -233,7 +233,7 @@ private partial def binder : T Option Formula.Binder := do
     <|> throw (t.range, r"Expected '\in' after binder variable name")
   let some rhs ← expr.maybe
     | throw (t.range ∪ (←range), r"Expected an expression after '\in' in a binder")
-  return .in_ (← popId) (← popId) name rhs
+  return .in_ (← popId) (← popId) name t.range rhs
 
 -- setInsides ::=
 --   | // empty set

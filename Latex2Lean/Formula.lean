@@ -152,7 +152,7 @@ partial def Formula.Kind.WF : Kind → Bool
   | .forall_ binders rhs _ => binders.size > 1 ∧ binders.all Binder.WF ∧ rhs.WF
 
 partial def Formula.Binder.WF : Formula.Binder → Bool
-  | .in_ _ _ _ inner => inner.WF
+  | .in_ (set:=inner) .. => inner.WF
 
 end
 
@@ -199,7 +199,7 @@ partial def Formula.Kind.toString : Kind → String
     |> (s!"\\forall {·}, {rhs.toString}")
 
 partial def Formula.Binder.toString : Formula.Binder → String
-  | .in_ _ _ name set => s!"{show String from name} \\in {set.toString}"
+  | .in_ _ _ name _ set => s!"{show String from name} \\in {set.toString}"
 
 end
 
@@ -223,16 +223,13 @@ def Formula.Kind.children : Kind → Array Formula × Array Binder
   | .emptySet ..
   | .var ..
   | .number ..
-    => #[]
-  | .app _func arg => #[arg]
-  | .binOp left _op right => #[left, right]
-  | .simpleSet _ elements .. => elements
-  | .mapSet _ lhs binders .. => #[lhs] ++ binders.flatMap (·.children)
-  | .tuple elements .. => elements
-  | .forall_ binders rhs .. => binders.flatMap (·.children) ++ #[rhs]
-
-def Formula.Binder.children : Binder → Array Formula
-  | .in_ _ _ _ _ a => #[a]
+    => (#[], #[])
+  | .app _func arg => (#[arg], #[])
+  | .binOp left _op right => (#[left, right], #[])
+  | .simpleSet _ elements .. => (elements, #[])
+  | .mapSet _ lhs binders .. => (#[lhs], binders)
+  | .tuple elements .. => (elements, #[])
+  | .forall_ binders rhs .. => (#[rhs], binders)
 
 def Formula.Binder.toFormula : Binder → Formula
   | .in_ varId rootId name nameRange set =>

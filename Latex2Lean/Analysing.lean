@@ -1,8 +1,7 @@
 import Latex2Lean.Util
 import Latex2Lean.CategorizedFormula
 import Latex2Lean.Analysis
-import Latex2Lean.Souffle
-import Latex2Lean.Node
+import Latex2Lean.RunAnalysisProcess
 
 
 /-!
@@ -33,7 +32,7 @@ private def BinOp.toNodeName : BinOp → String
 
 
 abbrev commaSep {α} [ToString α] (l : List α) : String := ",".intercalate <| l.map toString
-abbrev commaSepIds {α} [ToString α] (l : List Formula) := commaSep <| l.map id
+abbrev commaSepIds (l : List Formula) := commaSep <| l.map id
 
 
 def Formula.toAnalysisInputLine (f : Formula) : String :=
@@ -46,41 +45,30 @@ where
   | .app f x => s!"app,{f.name},{x.id}"
   | .binOp left op right => s!"op,{op},{left.id},{right.id}"
   | .simpleSet .set elements _ => s!"set,{commaSepIds elements.toList}"
-  | .mapSet _ lhs binders _ => s!"map,{lhs.id},{commaSepIds <| binders.toList.map (·.id)}"
-  | .mapSet _ lhs binders _ => ⟨"map", lhs.toNode :: binders.toList.map Formula.Binder.toNode⟩
-  | .tuple elements _ => ⟨"tuple", elements.toList.map toNode⟩
-  | .forall_ binders rhs _ =>
-    ⟨"forall", binders.toList.map (·.toNode) ++ [rhs.toNode]⟩
+  | .simpleSet .multiset elements _ => s!"multiset,{commaSepIds elements.toList}"
+  | .mapSet _ lhs binders _ => s!"map,{lhs.id},{commaSepIds <| binders.toList.map (·.toFormula)}"
+  | .tuple elements _ => s!"tuple,{commaSepIds elements.toList}"
+  | .forall_ binders rhs _ => s!"forall,{rhs.id},{commaSepIds <| binders.toList.map (·.toFormula)}"
 
-partial def Formula.Binder.toNode : Formula.Binder → Node
-  | .in_ name set => ⟨"in", [⟨String.mk name.toList, []⟩, set.toNode]⟩
+partial def Formula.Binder.toAnalysisInputLine (b : Binder) : String :=
+  b.toFormula.toAnalysisInputLine
 
-end
-
-
-private def csvs (formulas : Subarray CategorizedFormula) : Array Csv := Id.run do
-  let mut assumptions := #[]
-  let mut expressions := #[]
-  for f in formulas do
-    let isAssumption := match f with
-      | .definition .. | .axiom_ .. => true
-      | .plain .. => false
-    let node := f.toFormula.toNode
-    let string := if isAssumption then s!"[ {node.toString} ]" else node.toString
-    let row := #[string].toVector
-    if isAssumption
-    then assumptions := assumptions.push row
-    else expressions := expressions.push row
-  return #[
-    Csv.mk (n:=1) "assumption.csv" assumptions,
-    Csv.mk (n:=1) "expr.csv" expressions,
-  ]
-
+partial def makeAnalysisInput (roots : Array Formula) : String :=
+  roots.flatMap toAnalysisInputLineRecursive
+  |>.toList
+  |> "\n".intercalate
+where
+  toAnalysisInputLineRecursive (f : Formula) : Array String :=
+    let (childFormulas, childBinders) := f.children
+    #[ f.toAnalysisInputLine ]
+    ++ childFormulas.flatMap toAnalysisInputLineRecursive
+    ++ childBinders.flatMap (toAnalysisInputLineRecursive ·.toFormula)
 
 def analyze (formulas : Subarray CategorizedFormula) : IO Analysis := do
-  let csvs := csvs formulas
-  let result <- Souffle.call csvs (wsl := false)
-  AnalysisResult.fromCsvs result.toList |> IO.ofExcept
+  let input := makeAnalysisInput <| formulas.toArray.map (·.toFormula)
+  let result ← runAnalysisProcess input
+  -- AnalysisResult.fromCsvs result.toList |> IO.ofExcept
+  return default
 
 
 /-- info: true -/
@@ -89,16 +77,18 @@ def analyze (formulas : Subarray CategorizedFormula) : IO Analysis := do
   return a == default
 
 /-- info: true -/
-#guard_msgs in #eval do
+#guard_msgs in
+#eval do
   let a ← analyze #[
-      CategorizedFormula.definition "A" default (Formula.var "A" default),
+      CategorizedFormula.definition "A" default (.mk 1 <| .var "A" default) 2 3,
     ].toSubarray
   return a == default
 
-/-- info: true -/
-#guard_msgs in #eval do
+-- /-- info: true -/
+-- #guard_msgs in
+#eval do
   let a ← analyze #[
-      CategorizedFormula.definition "A" default (Formula.emptySet .set default),
+      CategorizedFormula.definition "A" default (.mk 1 <| .emptySet .set default) 2 3,
     ].toSubarray
   return a == {
     isFiniteSet := .ofArray #[ ⟨"A", []⟩, ⟨"new-set", []⟩ ],

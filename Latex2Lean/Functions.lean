@@ -41,7 +41,7 @@ def defineLatex {I} [Input I] (inp : I) (verbose : Bool := false)
   -- 4. Parse the tokens into formulas
   let formulas : Array (InlineMath.Kind × Formula) ←
     tokens.filterMapM fun (kind, t) =>
-      match parse kind t with
+      match parse kind t 0 with
       | .ok f => pure (kind, f)
       | .error e => do
         Lean.logWarning m!"Error during parsing: {e}"
