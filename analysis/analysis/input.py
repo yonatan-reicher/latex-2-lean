@@ -8,6 +8,8 @@ def parse_file(file: Path) -> dict[int, Ast]:
 
     text = file.read_text()
     lines = text.splitlines()
+    # Remove last line if empty.
+    if len(lines) > 0 and len(lines[-1]) == 0: lines.pop()
 
     class KindParseError(RuntimeError): pass
 
@@ -65,6 +67,7 @@ def parse_file(file: Path) -> dict[int, Ast]:
         elif kind_str == "sub":
             return AstKind.sub(*check_two_id_args())
         elif kind_str == "set":
+            # from pdb import set_trace; set_trace()
             return AstKind.set(Vec(*check_many_id_args()))
         else:
             return AstKind.error(f"Unknown kind '{kind_str}'")

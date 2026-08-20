@@ -1,4 +1,4 @@
-import Latex2Lean.Node.Basic
+import Latex2Lean.Formula
 import Std.Data.HashSet
 
 /-!
@@ -11,6 +11,7 @@ namespace Latex2Lean
 
 
 open Std (HashSet)
+open Formula (Id)
 
 
 instance {α} [BEq α] [Hashable α] : BEq (HashSet α) where
@@ -19,10 +20,15 @@ instance {α} [BEq α] [Hashable α] : BEq (HashSet α) where
 
 structure Analysis where
   /-- A set of all nodes that are finite sets -/
-  isFiniteSet : HashSet Node := {}
+  isFiniteSet : HashSet Id := {}
   /-- A set of all nodes that are used as finite sets -/
-  mustBeFiniteSet : HashSet Node := {}
+  mustBeFiniteSet : HashSet Id := {}
   deriving Repr, Inhabited, BEq
+
+def Analysis.names := #[
+  "is_finite",
+  "used_as_finite",
+]
 
 
 /-- A monad transformer with the analysis information -/

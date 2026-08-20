@@ -1,25 +1,44 @@
+import Latex2Lean.Csv
+import Latex2Lean.Analysis.Basic
 import Std.Data.HashMap
 -- import Batteries
 
-open Std (HashMap)
 open IO.FS (withTempDir writeFile readFile)
+open Std (HashMap)
+open System (FilePath)
 
 namespace Latex2Lean
 
-def runAnalysisProcess (input : String) : IO String := do
+def runAnalysisProcess (input : String) : IO (String × Array (String × Csv)) := do
   withTempDir fun dir => do
     let dir := dir.normalize
+    -- Initialize the input file.
     let inputPath := dir / "input"
     writeFile inputPath input
-    let output ← IO.Process.output {
+    -- Make me some output paths.
+    let outputPaths := Analysis.names.map λname => (name, dir / s!"{name}.csv")
+    let runResult ← IO.Process.output {
       cwd := "./analysis",
       cmd := "make",
-      args := #[inputPath.toString]
+      args := #[
+        "run",
+        s!"INPUT={inputPath.toString}",
+        (s!"OUTPUTS={·}")
+        <| " ".intercalate
+        <| outputPaths.toList.map fun (name, path) => s!"{name}={path.toString}"
+      ]
     }
-    if output.exitCode != 0 then
+    let success :=
+      runResult.exitCode == 0
+      && runResult.stderr.isEmpty
+    if not success then
       throw $ .userError s!"
-        Exit code: {output.exitCode}
-        Stdout: {output.stdout}
-        Stderr: {output.stderr}
+        Exit code: {runResult.exitCode}
+        Stdout: {runResult.stdout}
+        Stderr: {runResult.stderr}
       ".trim
-    return output.stdout
+    let outputs ← outputPaths.mapM fun (name, path) => do
+      let text ← readFile path
+      let csv ← .ofExcept <| Csv.read path text
+      return (name, csv)
+    return (runResult.stdout, outputs)

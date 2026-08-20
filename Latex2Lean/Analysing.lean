@@ -54,9 +54,9 @@ partial def Formula.Binder.toAnalysisInputLine (b : Binder) : String :=
   b.toFormula.toAnalysisInputLine
 
 partial def makeAnalysisInput (roots : Array Formula) : String :=
-  roots.flatMap toAnalysisInputLineRecursive
-  |>.toList
-  |> "\n".intercalate
+  "\n".intercalate <|
+    "id,kind,arguments"
+    :: (roots.flatMap toAnalysisInputLineRecursive |>.toList)
 where
   toAnalysisInputLineRecursive (f : Formula) : Array String :=
     let (childFormulas, childBinders) := f.children
@@ -66,9 +66,11 @@ where
 
 def analyze (formulas : Subarray CategorizedFormula) : IO Analysis := do
   let input := makeAnalysisInput <| formulas.toArray.map (·.toFormula)
-  let result ← runAnalysisProcess input
-  -- AnalysisResult.fromCsvs result.toList |> IO.ofExcept
-  return default
+  let (_stdout, outputs) ← runAnalysisProcess input
+  -- IO.println stdout
+  .ofExcept <| Analysis.fromCsvs <| outputs.toList.map fun (name, csv) =>
+    -- rename
+    { csv with fileName := name }
 
 
 /-- info: true -/
@@ -88,10 +90,10 @@ def analyze (formulas : Subarray CategorizedFormula) : IO Analysis := do
 -- #guard_msgs in
 #eval do
   let a ← analyze #[
-      CategorizedFormula.definition "A" default (.mk 1 <| .emptySet .set default) 2 3,
+      CategorizedFormula.definition "A" default (.mk 1 <| .simpleSet .set #[.mk 4 <| .number 1 default] default) 2 3,
     ].toSubarray
   return a == {
-    isFiniteSet := .ofArray #[ ⟨"A", []⟩, ⟨"new-set", []⟩ ],
+    isFiniteSet := .ofArray #[ 3, 1 ],
     mustBeFiniteSet := .ofArray #[],
     : Analysis
   }

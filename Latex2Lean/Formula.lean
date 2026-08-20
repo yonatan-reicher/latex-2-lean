@@ -98,7 +98,7 @@ inductive SetKind
 
 
 def Formula.Id := Nat
-deriving instance DecidableEq, Inhabited, Repr, ToString for Formula.Id
+deriving instance DecidableEq, Inhabited, Repr, ToString, Hashable for Formula.Id
 instance {n} : OfNat Formula.Id n := ⟨n⟩
 
 mutual
