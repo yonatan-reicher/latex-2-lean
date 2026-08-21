@@ -19,7 +19,7 @@ private partial def listFromString (text : String) : Except String (List String)
     throw s!"listFromString: expected string to start with '{lParen}', got '{text}'"
   if !text.endsWith rParen.toString then
     throw s!"listFromString: expected string to end with '{rParen}', got '{text}'"
-  let text := text.drop 1 |>.dropRight 1
+  let text := text.drop 1 |>.dropEnd 1
   let parts := text.splitButParens ',' lParen rParen
   let #[head, tail] := parts |
     throw s!"listFromString: expected string to have two parts, got '{text}'"

@@ -21,5 +21,5 @@ def runAnalysisProcess (input : String) : IO String := do
         Exit code: {output.exitCode}
         Stdout: {output.stdout}
         Stderr: {output.stderr}
-      ".trim
+      ".trimAscii.toString
     return output.stdout

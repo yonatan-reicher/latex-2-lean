@@ -57,7 +57,7 @@ def BinOp.predicative : BinOp → Bool
   | .slash
   | .cap
   | .cup
-  | .times 
+  | .times
     => false
 
 def BinOp.all : Array BinOp :=
@@ -79,7 +79,7 @@ def BinOp.all : Array BinOp :=
 
 theorem BinOp.mem_all : ∀ op, op ∈ all := by
   intro op
-  cases op <;> decide
+  cases op <;> simp [all]
 
 instance : ToString BinOp where
   toString := BinOp.toString

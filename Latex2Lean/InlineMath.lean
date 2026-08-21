@@ -1,5 +1,6 @@
 import Latex2Lean.Util
 import Latex2Lean.Pos
+import Latex2Lean.Text
 
 
 namespace Latex2Lean.InlineMath
