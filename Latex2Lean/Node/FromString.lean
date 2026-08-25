@@ -23,8 +23,8 @@ private partial def listFromString (text : String) : Except String (List String)
   let parts := text.splitButParens ',' lParen rParen
   let #[head, tail] := parts |
     throw s!"listFromString: expected string to have two parts, got '{text}'"
-  let head := head.trim.toString
-  let tail <- listFromString tail.trim.toString
+  let head := head.trimAscii.copy
+  let tail <- listFromString tail.trimAscii.copy
   return head :: tail
 
 
