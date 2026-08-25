@@ -32,7 +32,7 @@ private def BinOp.toNodeName : BinOp → String
 
 
 abbrev commaSep {α} [ToString α] (l : List α) : String := ",".intercalate <| l.map toString
-abbrev commaSepIds (l : List Formula) := commaSep <| l.map id
+abbrev commaSepIds (l : List Formula) := commaSep <| l.map Formula.id
 
 
 def Formula.toAnalysisInputLine (f : Formula) : String :=
