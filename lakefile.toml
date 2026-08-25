@@ -7,7 +7,6 @@ testDriver = "Latex2LeanTests"
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
 autoImplicit = false
-linter.unusedVariables = false
 
 [[require]]
 name = "mathlib"
