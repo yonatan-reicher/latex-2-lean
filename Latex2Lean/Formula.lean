@@ -79,7 +79,8 @@ def BinOp.all : Array BinOp :=
 
 theorem BinOp.mem_all : ∀ op, op ∈ all := by
   intro op
-  cases op <;> simp [all]
+  simp only [all, List.mem_toArray, List.mem_cons, List.not_mem_nil, or_false]
+  cases op <;> decide
 
 instance : ToString BinOp where
   toString := BinOp.toString
