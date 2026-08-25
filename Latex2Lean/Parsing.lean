@@ -100,7 +100,7 @@ private partial def binaryOperator : T Option BinOp := do
 where toTokenKind : BinOp → Token.Kind
   | op =>
     let str := op.toString
-    let c := String.Pos.Raw.get str 0
+    let c := str.front?
     if c = some '\\'
     then .command' $ str.drop 1 |> String.Slice.toString
     else .symbol' str
