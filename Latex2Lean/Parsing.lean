@@ -102,7 +102,7 @@ where toTokenKind : BinOp → Token.Kind
     let str := op.toString
     let c := str.front?
     if c = some '\\'
-    then .command' $ str.drop 1 |> String.Slice.toString
+    then .command' $ str.drop 1 |>.copy
     else .symbol' str
 
 #guard binaryOperator.toTokenKind .plus = .symbol "+"
