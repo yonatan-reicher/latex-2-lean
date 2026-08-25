@@ -158,7 +158,7 @@ private partial def binderToExists : Formula.Binder → (rhs : M Expr) → M Exp
     check set -- Must call this before the next action!
     let type ← inferType set
     let some elementType ← getSetElement type
-      | throwError m!"{set} must be a set, but had type {type}."
+      | throwError m!"'{set}' must be a set, but had type '{type}'."
     -- Declare the variable!
     withLocalDeclD (.mkSimple name) elementType fun fvar => do
       -- Now make some syntax.
@@ -175,7 +175,7 @@ private partial def binderToForall : Formula.Binder → (rhs : M Expr) → M Exp
     check set -- Must call this before the next action!
     let type ← inferType set
     let some elementType ← getSetElement type
-      | throwError m!"{set} must be a set, but had type {type}."
+      | throwError m!"'{set}' must be a set, but had type '{type}'."
     -- Declare the variable!
     withLocalDeclD (.mkSimple name) elementType fun fvar => do
       -- And declare a variable for the assumption that it is in the set.
