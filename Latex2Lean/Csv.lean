@@ -39,7 +39,7 @@ where
   splitRow : String -> Array String
   | row =>
     row.splitButParens ',' '[' ']'
-    |>.map (·.toString.trim)
+    |>.map (·.toString.trimAscii.copy)
 
 #guard
   read "Foo" "[ hello, world ], 2"

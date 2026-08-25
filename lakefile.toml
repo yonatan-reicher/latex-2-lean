@@ -11,6 +11,7 @@ autoImplicit = false
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
+rev = "v4.31.0"
 
 [[require]]
 name = "NessieParse"

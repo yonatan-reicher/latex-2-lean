@@ -101,9 +101,9 @@ private partial def binaryOperator : T Option BinOp := do
 where toTokenKind : BinOp → Token.Kind
   | op =>
     let str := op.toString
-    let c := str.get 0
+    let c := str.front?
     if c = some '\\'
-    then .command' $ str.drop 1
+    then .command' $ str.drop 1 |>.copy
     else .symbol' str
 
 #guard binaryOperator.toTokenKind .plus = .symbol "+"
@@ -143,8 +143,6 @@ private partial def forall_ : T Option Formula := do
 private partial def atom : T Option Formula := do
   let t ← pop
   match t.kind with
-  | Token.Kind.command' "emptyset"
-  | Token.Kind.command' "varnothing" => returnNewNode .emptySet .set t.range
   | Token.Kind.number n =>
     (do
       let t2 ← peek
@@ -155,14 +153,41 @@ private partial def atom : T Option Formula := do
       | _ =>
         throw (t.range ∪ t2.range, "Expected a number after '..'"))
     <|> (do returnNewNode .number n t.range)
-  | Token.Kind.command' "abs"
-  | Token.Kind.command' "sum" =>
-    let some inner ← atom.maybe
-      | throw (t.range, r"Expected an expression atom after '\abs'")
-    match t.kind with
-    | Token.Kind.command' "abs" => returnNewNode .app ⟨"\\abs", t.range⟩ inner
-    | Token.Kind.command' "sum" => returnNewNode .app ⟨"\\sum", t.range⟩ inner
-    | _ => throw (t.range, "Invalid function name")
+  | Token.Kind.command c =>
+    match (c : String) with
+    | "emptyset"
+    | "varnothing" => returnNewNode .emptySet .set t.range
+    | "abs"
+    | "sum" =>
+      let some inner ← atom.maybe
+        | throw (t.range, r"Expected an expression atom after '\abs'")
+      match (c : String) with
+      | "abs" => returnNewNode .app ⟨"\\abs", t.range⟩ inner
+      | "sum" => returnNewNode .app ⟨"\\sum", t.range⟩ inner
+      | _ => throw (t.range, "Invalid function name")
+    | "{" =>
+      let inner ← setInsides .set
+      let r := t.range ∪ (←range)
+      let inner := inner r
+      popEq (.command' "}")
+      <|> throw (r, r"A '\{' was not closed with an '\}'")
+      returnNewNode inner
+    | "set"
+    | "mset" =>
+      let kind ← match t.kind with
+        | .command' "set" => pure .set
+        | .command' "mset" => pure .multiset
+        | _ => throw (t.range, "Invalid set kind")
+      popEq (Token.Kind.symbol' "{")
+      <|> throw (t.range, r"Expected '{' after '\set'")
+      let inner ← setInsides kind
+      let r := t.range ∪ (←range)
+      popEq (Token.Kind.symbol' "}")
+      <|> throw (r, r"A '\set{' was not closed with a '}'")
+      returnNewNode inner r
+    | "forall" => forall_
+    | _ => throw (t.range, s!"Invalid command '{c}'")
+
   | Token.Kind.symbol' "{" =>
     let some inner ← expr.maybe
       | throw (t.range, "Expected an expression inside '{ }' (Maybe you meant to
@@ -170,28 +195,7 @@ private partial def atom : T Option Formula := do
     popEq (Token.Kind.symbol' "}")
     <|> throw (t.range ∪ inner.range, "A '{' was not closed with an '}'")
     return inner
-  | Token.Kind.command' "{" =>
-    let inner ← setInsides .set
-    let r := t.range ∪ (←range)
-    let inner := inner r
-    popEq (Token.Kind.command' "}")
-    <|> throw (r, r"A '\{' was not closed with an '\}'")
-    returnNewNode inner
-  | Token.Kind.command' "set"
-  | Token.Kind.command' "mset" =>
-    let kind ← match t.kind with
-      | .command' "set" => pure .set
-      | .command' "mset" => pure .multiset
-      | _ => throw (t.range, "Invalid set kind")
-    popEq (Token.Kind.symbol' "{")
-    <|> throw (t.range, r"Expected '{' after '\set'")
-    let inner ← setInsides kind
-    let r := t.range ∪ (←range)
-    popEq (Token.Kind.symbol' "}")
-    <|> throw (r, r"A '\set{' was not closed with a '}'")
-    returnNewNode inner r
-  | .command' "forall" => forall_
-  | Token.Kind.symbol' r"(" =>
+  | Token.Kind.symbol' "(" =>
     let inner ← commaSeparated "an expression" "tuple" expr
     let r := t.range ∪ (← range)
     popEq (Token.Kind.symbol' ")")
@@ -202,7 +206,6 @@ private partial def atom : T Option Formula := do
     | _ => returnNewNode .tuple inner r
   | Token.Kind.word name => returnNewNode .var name t.range
   -- TODO: Maybe we want to just return none?
-  | Token.Kind.command c => throw (t.range, s!"Invalid command '{c}'")
   | Token.Kind.symbol s => throw (t.range, s!"Invalid symbol '{s}'")
   | Token.Kind.error s => throw (t.range, s!"Lexing error: {s}")
 

@@ -36,7 +36,7 @@ def runAnalysisProcess (input : String) : IO (String × Array (String × Csv)) :
         Exit code: {runResult.exitCode}
         Stdout: {runResult.stdout}
         Stderr: {runResult.stderr}
-      ".trim
+      ".trimAscii.copy
     let outputs ← outputPaths.mapM fun (name, path) => do
       let text ← readFile path
       let csv ← .ofExcept <| Csv.read path text
