@@ -35,6 +35,9 @@ abbrev commaSep {α} [ToString α] (l : List α) : String := ",".intercalate <| 
 abbrev commaSepIds (l : List Formula) := commaSep <| l.map Formula.id
 
 
+instance : ToString (Array Char) where toString := Coe.coe
+
+
 def Formula.toAnalysisInputLine (f : Formula) : String :=
   s!"{show Nat from f.id},{dispatch f.kind}"
 where
