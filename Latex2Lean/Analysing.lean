@@ -46,6 +46,7 @@ where
   | .var name _ => s!"var,{name}"
   | .number n _ => s!"num,{n}"
   | .app f x => s!"app,{f.name},{x.id}"
+  | .binOp left .eq right => s!"eq,{left.id},{right.id}"
   | .binOp left op right => s!"op,{op},{left.id},{right.id}"
   | .simpleSet .set elements _ => s!"set,{commaSepIds elements.toList}"
   | .simpleSet .multiset elements _ => s!"multiset,{commaSepIds elements.toList}"
