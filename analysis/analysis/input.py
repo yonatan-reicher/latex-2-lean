@@ -46,6 +46,8 @@ def parse_file(file: Path) -> dict[int, Ast]:
                     f"'{args}' were given."
                 )
             return split_args[0], split_args[1]
+        def check_one_id_arg() -> AstId:
+            return ast_id(check_one_arg())
         def check_two_id_args() -> tuple[AstId, AstId]:
             arg1_str, arg2_str = check_two_args()
             return ast_id(arg1_str), ast_id(arg2_str)
@@ -67,8 +69,11 @@ def parse_file(file: Path) -> dict[int, Ast]:
         elif kind_str == "sub":
             return AstKind.sub(*check_two_id_args())
         elif kind_str == "set":
-            # from pdb import set_trace; set_trace()
-            return AstKind.set(Vec(*check_many_id_args()))
+            return AstKind.set(Vec[AstId](*check_many_id_args()))
+        elif kind_str == "definition":
+            return AstKind.definition(check_one_id_arg())
+        elif kind_str == "eq":
+            return AstKind.eq(*check_two_id_args())
         else:
             return AstKind.error(f"Unknown kind '{kind_str}'")
 
