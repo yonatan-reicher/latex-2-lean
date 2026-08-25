@@ -15,7 +15,6 @@ private def Csv.toSet (csv : Csv) : Except String $ Std.HashSet Formula.Id := do
   if csv.rows.isEmpty then return ∅
   if h : csv.n != 1 then throw s!"Csv file {csv.fileName} should have exactly one column, but has {csv.n} columns"
   else
-    dbg_trace repr csv
     .ofArray <$> csv.rows.mapM fun row => 
       let idStr := row[0]'(by grind only)
       match idStr.toNat? with

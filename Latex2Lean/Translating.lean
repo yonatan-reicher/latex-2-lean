@@ -32,7 +32,8 @@ open Lean.Meta
 private abbrev CF := CategorizedFormula
 private abbrev F := Formula
 private abbrev Name := Array Char
-private abbrev M := ReaderT Analysis TermElabM
+private abbrev M := AnalysisReaderT TermElabM
+private abbrev FId := Formula.Id
 
 
 instance : MonadLift CoreM M where monadLift := fun x _ => x
@@ -40,15 +41,6 @@ instance : MonadLift MetaM M where monadLift := fun x _ => x
 
 
 -- Helpers
-
-private def isFiniteSet (name : Name) : M Bool := do
-  let isFiniteSet := (← read).isFiniteSet
-  return isFiniteSet.contains ⟨name, []⟩
-
-private def mustBeFiniteSet (name : Name) : M Bool := do
-  let mustBeFiniteSet := (← read).mustBeFiniteSet
-  return mustBeFiniteSet.contains ⟨name, []⟩
-
 
 private def varToIdent (name : Name) : Ident := mkIdent (.mkSimple name)
 
@@ -109,7 +101,7 @@ private def multisetType : MetaM Expr := Prod.fst <$> multisetType'
 
 /-- Get the element type of a set or a finset -/
 private def getSetElement (e : Expr) : M (Option Expr) :=
-  withNewMCtxDepth do
+  withNewMCtxDepth <| show OptionT M Expr from do
     let (setType, setElementType) ← setType'
     let (finsetType, finsetElementType) ← finsetType'
     let (multisetType, multisetElementType) ← multisetType'
@@ -117,7 +109,7 @@ private def getSetElement (e : Expr) : M (Option Expr) :=
       if ← isDefEq e setType then pure setElementType
       else if ← isDefEq e finsetType then pure finsetElementType
       else if ← isDefEq e multisetType then pure multisetElementType
-      else none
+      else failure
     return ← instantiateMVars outMVar
 
 
@@ -381,11 +373,10 @@ end
 
 
 /-- Translate a definition. Needs to decide the type to translate into. -/
-private def definition (name : Name) (f : F) : M LeanCmd := do
+private def definition (id : FId) (name : Name) (f : F) : M LeanCmd := do
   let leanName := Name.mkSimple name
-  if ← mustBeFiniteSet name
-  then
-    if ← isFiniteSet name
+  if ← mustBeFiniteSet id then
+    if ← isFiniteSet id
     then return .def_ leanName (← asFinset f)
     else throwError s!"'{Name.mkSimple name}' must be a Finset but could not be inferred as finite"
   else
@@ -393,16 +384,16 @@ private def definition (name : Name) (f : F) : M LeanCmd := do
 
 
 /-- Translate an axiom. Needs to translate into a proposition. -/
-private def axiom_ (f : F) : M LeanCmd := do
+private def axiom_ (id : FId) (f : F) : M LeanCmd := do
   -- TODO: Turns out that `getUnusedName` only returns a name not used in the
   -- local context, so we can still get name clashes (because our names get
   -- added to the global scope). Fix this!
   return .axiom_ none $ ← asWhatever f
 
 private def categorizedFormula : CF → M (Option LeanCmd)
-  | .definition name _ e varId opId => return some (← definition name e)
-  | .axiom_ f => return some (← axiom_ f)
-  | .plain .. => return none
+  | .definition id name _ e varId opId => return some (← definition id name e)
+  | .axiom_ id f => return some (← axiom_ id f)
+  | .plain id .. => return none
 
 
 def translate (f : CF) (a : Analysis) : TermElabM (Option LeanCmd) :=

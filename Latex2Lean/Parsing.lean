@@ -63,7 +63,8 @@ def popEq (kind : Token.Kind) : T Option Unit := do
   then ignore <$> pop
   else failure
 
-def popId : T Id FId := modifyGetThe NextId fun nextId => (nextId, Nat.add nextId 1)
+def popId [MonadStateOf NextId m] : m FId :=
+  modifyGetThe NextId fun nextId => (nextId, Nat.add nextId 1)
 
 def range : M Range := do
   match ← peek.maybe with
@@ -75,7 +76,7 @@ private def setFromRange (a b : Nat) (r : Range) : T Id Formula := do
   let len := b - a
   Array.range (len + 1)
     |>.map (· + a) -- Add the starting to all indices to get the numbers
-    |>.mapM (fun n => return Formula.mk (← popId) <| .number n r) -- Make number nodes
+    |>.mapM (m:=M) (fun n => return Formula.mk (← popId) <| .number n r) -- Make number nodes
     |>.map (Formula.mk (← popId) <| .simpleSet .set · r) -- Put the array in a set node
 
 
@@ -244,12 +245,12 @@ private partial def binder : T Option Formula.Binder := do
 end
 
 
-def parse : InlineMath.Kind → Subarray Token → NextId → Except Error Formula
+def parse : InlineMath.Kind → Subarray Token → NextId → Except Error (Formula × NextId)
   | _kind, tokens, firstId =>
     match expr tokens firstId with
     | .error e => .error e
-    | .ok ((f, rest), _) =>
-      if h : rest.size = 0 then .ok f
+    | .ok ((f, rest), nextId) =>
+      if h : rest.size = 0 then .ok (f, nextId)
       else
         have : NeZero rest.size := by exact { out := h }
         let first := rest.get 0
@@ -262,4 +263,4 @@ def parse : InlineMath.Kind → Subarray Token → NextId → Except Error Formu
     .singleDollar
     #[ Token.mk (.word' "x") ⟨⟨0, 1⟩, ⟨2, 3⟩⟩ ]
     1
-  == .ok (.mk 1 <| .var "x" ⟨⟨0, 1⟩, ⟨2, 3⟩⟩)
+  == .ok (.mk 1 <| .var "x" ⟨⟨0, 1⟩, ⟨2, 3⟩⟩, 2)

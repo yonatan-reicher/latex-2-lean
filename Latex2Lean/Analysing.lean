@@ -57,10 +57,16 @@ where
 partial def Formula.Binder.toAnalysisInputLine (b : Binder) : String :=
   b.toFormula.toAnalysisInputLine
 
-partial def makeAnalysisInput (roots : Array Formula) : String :=
+def CategorizedFormula.toAnalysisInputLine : CategorizedFormula → String
+  | .definition id (opId:=rootId) .. => s!"{id},definition,{rootId}"
+  | .axiom_ id f => s!"{id},axiom,{f.id}"
+  | .plain id f => s!"{id},plain,{f.id}"
+
+partial def makeAnalysisInput (roots : Array CategorizedFormula) : String :=
   "\n".intercalate <|
     "id,kind,arguments"
-    :: (roots.flatMap toAnalysisInputLineRecursive |>.toList)
+    :: (roots.map (·.toAnalysisInputLine) |>.toList)
+    ++ (roots.flatMap (toAnalysisInputLineRecursive ·.toFormula) |>.toList)
 where
   toAnalysisInputLineRecursive (f : Formula) : Array String :=
     let (childFormulas, childBinders) := f.children
@@ -69,7 +75,7 @@ where
     ++ childBinders.flatMap (toAnalysisInputLineRecursive ·.toFormula)
 
 def analyze (formulas : Subarray CategorizedFormula) : IO Analysis := do
-  let input := makeAnalysisInput <| formulas.toArray.map (·.toFormula)
+  let input := makeAnalysisInput formulas
   let (_stdout, outputs) ← runAnalysisProcess input
   -- IO.println stdout
   .ofExcept <| Analysis.fromCsvs <| outputs.toList.map fun (name, csv) =>
@@ -86,18 +92,19 @@ def analyze (formulas : Subarray CategorizedFormula) : IO Analysis := do
 #guard_msgs in
 #eval do
   let a ← analyze #[
-      CategorizedFormula.definition "A" default (.mk 1 <| .var "A" default) 2 3,
+      CategorizedFormula.definition 0 "A" default (.mk 1 <| .var "A" default) 2 3,
     ].toSubarray
   return a == default
 
--- /-- info: true -/
--- #guard_msgs in
+/-- info: true -/
+#guard_msgs in
 #eval do
   let a ← analyze #[
-      CategorizedFormula.definition "A" default (.mk 1 <| .simpleSet .set #[.mk 4 <| .number 1 default] default) 2 3,
+      CategorizedFormula.definition 0 "A" default (.mk 1 <| .simpleSet .set #[.mk 4 <| .number 1 default] default) 2 3,
+      .plain 5 <| .mk 6 <| .var "A" default,
     ].toSubarray
   return a == {
-    isFiniteSet := .ofArray #[ 3, 1 ],
+    isFiniteSet := .ofArray #[ 1, 2, 6 ],
     mustBeFiniteSet := .ofArray #[],
     : Analysis
   }
