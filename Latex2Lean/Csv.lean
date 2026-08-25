@@ -36,7 +36,7 @@ def read : FilePath -> List String -> Except String Csv
     splitRow : String -> Array String
     | row =>
       row.splitButParens ',' '[' ']'
-      |>.map (·.toString.trimAscii.toString)
+      |>.map (·.toString.trimAscii.copy)
 
 #guard
   read "Foo" ["[ hello, world ], 2"]
