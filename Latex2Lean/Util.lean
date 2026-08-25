@@ -49,7 +49,7 @@ Splits a string at the delimiter, but respects parentheses.
 -/
 def splitButParens (text : String) (delim : Char) (lParen rParen : Char)
 -- TODO: : Array (Array Char) := Id.run do
-: Array Substring.Raw := Id.run do
+: Array String.Slice := Id.run do
   let mut depth : Int := 0
   let mut startIdx := 0
   let mut endIdx := 0
@@ -66,16 +66,18 @@ def splitButParens (text : String) (delim : Char) (lParen rParen : Char)
       endIdx := endIdx + c
   let substring := Substring.Raw.mk text startIdx endIdx
   ret := ret.push substring
-  return ret
+  return ret.map fun s => match s.toSlice? with
+    | some s => s
+    | none => panic! s!"something went very wrong with this code. splitOfParens on '{s}'"
 
 def Slice.splitButParens (text : String.Slice) :=
-  text.toString.splitButParens
+  text.copy.splitButParens
 
 -- This is a unit test for the function above
 #guard
   "hello, [world, 2], 3"
   |>.splitButParens ',' '[' ']'
-  |>.map (·.toString)
+  |>.map (·.copy)
   |> (. == #["hello", " [world, 2]", " 3"])
 
 end String
