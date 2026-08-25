@@ -50,7 +50,11 @@ where
   | .binOp left op right => s!"op,{op},{left.id},{right.id}"
   | .simpleSet .set elements _ => s!"set,{commaSepIds elements.toList}"
   | .simpleSet .multiset elements _ => s!"multiset,{commaSepIds elements.toList}"
-  | .mapSet _ lhs binders _ => s!"map,{lhs.id},{commaSepIds <| binders.toList.map (·.toFormula)}"
+  | .set k lhs rhs _ =>
+    let kind := match k with
+      | .set => "set"
+      | .multiset => "multiset"
+    s!"{kind},{lhs.id},{commaSepIds rhs.toList}"
   | .tuple elements _ => s!"tuple,{commaSepIds elements.toList}"
   | .forall_ binders rhs _ => s!"forall,{rhs.id},{commaSepIds <| binders.toList.map (·.toFormula)}"
 

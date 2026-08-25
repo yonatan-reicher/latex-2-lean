@@ -138,6 +138,13 @@ where toStx : BinOp → Term → Term → M Term
   | .times, a, b => ``($a × $b)
 
 
+def Formula.asBinder (f : Formula) : Option Formula.Binder :=
+  match f.kind with
+  | .binOp (.mk varId <| .var varName varRange) .in_ rhs =>
+    some <| .in_ varId f.id varName varRange rhs
+  | _ => none
+
+
 mutual
 
 
@@ -208,8 +215,8 @@ private partial def asFinset : F → M Expr
     let list ← mkListLit (←mkFreshTypeMVar) elements.toList
     check list
     mkAppM ``List.toFinset #[list]
-  | .mk id <| .mapSet .set _ #[] .. => throwError s!"mapSet with no binders" -- TODO
-  | .mk id <| .mapSet .set lhs binders .. => do
+  | .mk id <| .set .set _ #[] .. => throwError r"'\set{ .. \mid .. }' with no binders"
+  | .mk id <| .set .set lhs binders .. => do
     -- We need to generate calls to finset operations and assume that the things
     -- given can be translated to finsets. For `{ x + 1 | x \in A }`, we want to
     -- use `Finset.image`, like this `A.image fun x => x + 1`. For multiple
@@ -218,7 +225,8 @@ private partial def asFinset : F → M Expr
     let b ← match binders with
       | #[b] => pure b
       | _ => throwError m!"not supported yet"
-    let .in_ varId rootId name nameRange set := b
+    let .mk rootId <| .binOp (.mk varId <| .var name nameRange) .in_ set := b
+      | panic! "unsupported"
     -- Get the element type
     let set ← asFinset set
     check set
@@ -250,8 +258,12 @@ private partial def asSet : F → M Expr
     let separated : Syntax.TSepArray `term "," := .ofElems elements
     let stx ← ``(({ $separated:term,* } : Set _))
     elabTermEnsuringType stx (some (← setType))
-  | .mk id <| .mapSet .set _ #[] .. => throwError s!"mapSet with no binders" -- TODO
-  | .mk id <| .mapSet .set lhs binders .. => do
+  | .mk id <| .set .set _ #[] .. => throwError r"'\set{ .. \mid .. }' with no binders"
+  | .mk id <| .set .set lhs rhs .. => do
+    let (binderAbles, nonBinders) := rhs.partition (·.asBinder.isSome)
+    let binders := binderAbles.filterMap (·.asBinder)
+    if binders.isEmpty then
+      throwError s!"this set expression does not bind any variables"
     -- We want to generate `{ lhs | (x ∈ A) (y ∈ B) }`. This is actually pretty
     -- hard to generate this as syntax, because of how free variables interact
     -- with syntax and the expressions. So instead we generate
@@ -261,12 +273,18 @@ private partial def asSet : F → M Expr
     mkAppM ``setOf $ Array.singleton $
       ← withLocalDeclD aName aType fun aFVar => do
         mkLambdaFVars #[aFVar] $ ← do
-          let pred ← binders.foldl
+          -- Make a predicate for the non-binders
+          let pred : M Expr := do mkEq aFVar $ ← asWhatever lhs
+          let pred := nonBinders
+            |>.map asProp
+            |>.foldr (init := pred) fun acc e => return mkAnd (← acc) (← e)
+          -- Add onto it the existentials from the binders
+          let pred' ← binders.foldr
             (β := M Expr)
-            (init := do mkEq aFVar $ ← asWhatever lhs)
-            fun acc b => binderToExists b acc
-          check pred
-          return pred
+            (init := pred)
+            fun b acc => binderToExists b acc
+          check pred'
+          return pred'
   | f => throwError s!"unsupported formula for translation to set: {f}"
 
 
@@ -296,13 +314,15 @@ private partial def asMultiset : F → M Expr
     -- There is actually no coercesion instance for this conversion, so use the
     -- dumb thing.
     mkAppM ``Finset.val #[s]
-  | .mk id <| .mapSet .multiset _ #[] .. => throwError s!"mapSet with no binders" -- TODO
-  | .mk id <| .mapSet .multiset lhs binders _ => do
+  | .mk id <| .set .multiset _ #[] .. => throwError r"'\set{ .. \mid .. }' with no binders"
+  | .mk id <| .set .multiset lhs binders _ => do
     -- Translate to ``Multiset.pmap, which takes 3 argumets - a mapping with a
     -- predicate, a multi-set, and a proof that the predicate holds for all the
     -- elements of the set. We don't care for the predicate, so we just give it
     -- a constant True.
-    let #[.in_ varId rootId name nameRange s] := binders | throwError m!"not implemented yet"
+    let #[
+      .mk rootId <| .binOp (.mk varId <| .var name nameRange) .in_ s
+    ] := binders | throwError m!"not implemented yet"
     -- This is the set
     let s ← asMultiset s
     check s
@@ -363,8 +383,8 @@ private partial def asWhatever (f : F) : M Expr :=
     binOp op none left right
   | .mk id <| .simpleSet .set .. => asSet f
   | .mk id <| .simpleSet .multiset .. => asMultiset f
-  | .mk id <| .mapSet .set .. => asSet f
-  | .mk id <| .mapSet .multiset .. => asMultiset f
+  | .mk id <| .set .set .. => asSet f
+  | .mk id <| .set .multiset .. => asMultiset f
   | .mk id <| .tuple .. => asTuple f
   | .mk id <| .forall_ .. => asProp f
 

@@ -211,10 +211,10 @@ private partial def setInsides (kind : SetKind) : M (Range → Formula.Kind) := 
   let some lhs ← expr.maybe
     | return .emptySet kind
   if (← popEq (Token.Kind.command' "mid") |>.maybe).isSome then
-    let rhs ← binders
+    let rhs ← expressions
     if rhs.isEmpty then
-      throw (← range, r"Expected at least one binder after '\mid' in a set")
-    return .mapSet kind lhs rhs
+      throw (← range, r"Expected at least one expression after '\mid' in a set")
+    return .set kind lhs rhs
   else
     if (← popEq (Token.Kind.symbol' ",") |>.maybe).isNone then
       return .simpleSet kind #[lhs]
@@ -223,7 +223,6 @@ private partial def setInsides (kind : SetKind) : M (Range → Formula.Kind) := 
     return .simpleSet kind all
 where
   expressions := commaSeparated "an expression" "set" expr
-  binders := commaSeparated "a binder" "set" binder
 
 
 private partial def binder : T Option Formula.Binder := do

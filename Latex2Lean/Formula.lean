@@ -114,7 +114,7 @@ inductive Formula.Kind where
   | app (func : Formula.Ident) (arg : Formula)
   | binOp (left : Formula) (op : BinOp) (right : Formula)
   | simpleSet (kind : SetKind) (elements : Array Formula) (range : Range)
-  | mapSet (kind : SetKind) (lhs : Formula) (binders : Array Formula.Binder) (range : Range)
+  | set (kind : SetKind) (lhs : Formula) (rhs : Array Formula) (range : Range)
   | tuple (elements : Array Formula) (range : Range)
   | forall_ (binders : Array Formula.Binder) (rhs : Formula) (range : Range)
   deriving Inhabited, BEq, Repr
@@ -147,7 +147,7 @@ partial def Formula.Kind.WF : Kind → Bool
   | .app _ inner => inner.WF
   | .binOp l _ r => l.WF ∧ r.WF
   | .simpleSet _ elements _ => elements.all WF
-  | .mapSet _ lhs binders _ => lhs.WF ∧ binders.all Binder.WF
+  | .set _ lhs rhs _ => lhs.WF ∧ rhs.all WF ∧ ¬rhs.isEmpty
   | .tuple elements _ => elements.size > 1 ∧ elements.all WF
   | .forall_ binders rhs _ => binders.size > 1 ∧ binders.all Binder.WF ∧ rhs.WF
 
@@ -165,7 +165,7 @@ partial def Formula.Kind.range : Kind → Range
   | .app func arg => func.range ∪ arg.range
   | .binOp l _ r => l.range ∪ r.range
   | .simpleSet _ _ r => r
-  | .mapSet _ _ _ r => r
+  | .set (range:=r) .. => r
   | .tuple _ r => r
   | .forall_ _ _ r => r
 
@@ -187,8 +187,8 @@ partial def Formula.Kind.toString : Kind → String
   | .simpleSet _ elements _ =>
     ", ".intercalate (elements.toList.map Formula.toString)
     |> (s!"\\\{ {·} \\}")
-  | .mapSet _ lhs binders _ =>
-    s!"\\\{ {lhs.toString} \\mid {", ".intercalate (binders.toList.map Formula.Binder.toString)} \\}"
+  | .set _ lhs rhs _ =>
+    s!"\\\{ {lhs.toString} \\mid {", ".intercalate (rhs.toList.map toString)} \\}"
   | .tuple elements _ =>
     s!"({", ".intercalate (elements.toList.map Formula.toString)})"
   | .forall_ #[binder] rhs _ =>
@@ -227,7 +227,7 @@ def Formula.Kind.children : Kind → Array Formula × Array Binder
   | .app _func arg => (#[arg], #[])
   | .binOp left _op right => (#[left, right], #[])
   | .simpleSet _ elements .. => (elements, #[])
-  | .mapSet _ lhs binders .. => (#[lhs], binders)
+  | .set _ lhs rhs .. => (#[lhs] ++ rhs, #[])
   | .tuple elements .. => (elements, #[])
   | .forall_ binders rhs .. => (#[rhs], binders)
 
