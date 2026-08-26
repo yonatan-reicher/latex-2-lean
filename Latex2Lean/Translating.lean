@@ -151,7 +151,7 @@ mutual
 /-- Translate a binder to an exists expression. -/
 @[inline]
 private partial def binderToExists : Formula.Binder → (rhs : M Expr) → M Expr
-  | .in_ varId rootId name nameRange set, rhs => do
+  | .in_ (name:=name) (set:=set) .., rhs => do
     -- First translate the set, and extract the element type.
     let set ← asWhatever set
     check set -- Must call this before the next action!
@@ -168,7 +168,7 @@ private partial def binderToExists : Formula.Binder → (rhs : M Expr) → M Exp
 /-- Translate a binder to an exists expression. -/
 @[inline]
 private partial def binderToForall : Formula.Binder → (rhs : M Expr) → M Expr
-  | .in_ varId rootId name nameRange set, rhs => do
+  | .in_ (name:=name) (set:=set) .., rhs => do
     -- First translate the set, and extract the element type.
     let set ← asWhatever set
     check set -- Must call this before the next action!
@@ -184,17 +184,18 @@ private partial def binderToForall : Formula.Binder → (rhs : M Expr) → M Exp
         mkForallFVars #[fvar, hFVar] $ ← rhs
 
 
-private partial def asNumber : F → M Expr
-  | .mk id <| .var name .. => varToExpr name
-  | .mk id <| .number n .. => return mkNatLit n
-  | .mk id <| .app ⟨"\\abs", _⟩ inner => do
+private partial def asNumber (f : F) : M Expr :=
+  match f.kind with
+  | .var name .. => varToExpr name
+  | .number n .. => return mkNatLit n
+  | .app ⟨"\\abs", _⟩ inner => do
     -- TODO: What if inner is actually a number?
     let innerExpr ← asFinset inner
     mkAppM ``Finset.card #[innerExpr]
-  | .mk id <| .app ⟨"\\sum", _⟩ inner => do
+  | .app ⟨"\\sum", _⟩ inner => do
     -- For now, assume the result is a multiset.
     mkAppM ``Multiset.sum #[← asMultiset inner]
-  | .mk id <| .binOp left op right .. => do
+  | .binOp left op right .. => do
     let leftExpr ← asNumber left
     let rightExpr ← asNumber right
     let f ← match op with
@@ -202,21 +203,22 @@ private partial def asNumber : F → M Expr
       | .star => pure ``HMul.hMul
       | _ => throwError s!"unsupported binary operator for translation to number: {repr op}"
     mkAppM f #[leftExpr, rightExpr]
-  | f => throwError s!"unsupported formula for translation to number: {f}"
+  | _ => throwError s!"unsupported formula for translation to number: {f}"
 
 
-private partial def asFinset : F → M Expr
-  | .mk id <| .emptySet .set .. => mkAppM ``Finset.empty #[]
-  | .mk id <| .var name .. => varToExpr name
-  | .mk id <| .number n .. => throwError s!"cannot translate number {n} into a finset"
+private partial def asFinset (f : F) : M Expr :=
+  match f.kind with
+  | .emptySet .set .. => mkAppM ``Finset.empty #[]
+  | .var name .. => varToExpr name
+  | .number n .. => throwError s!"cannot translate number {n} into a finset"
   -- | .binOp (left : Formula) (op : BinOp) (right : Formula)
-  | .mk id <| .simpleSet .set elements .. => do
+  | .simpleSet .set elements .. => do
     let elements ← elements.mapM asWhatever
     let list ← mkListLit (←mkFreshTypeMVar) elements.toList
     check list
     mkAppM ``List.toFinset #[list]
-  | .mk id <| .set .set _ #[] .. => throwError r"'\set{ .. \mid .. }' with no binders"
-  | .mk id <| .set .set lhs binders .. => do
+  | .set .set _ #[] .. => throwError r"'\set{ .. \mid .. }' with no binders"
+  | .set .set lhs binders .. => do
     -- We need to generate calls to finset operations and assume that the things
     -- given can be translated to finsets. For `{ x + 1 | x \in A }`, we want to
     -- use `Finset.image`, like this `A.image fun x => x + 1`. For multiple
@@ -225,7 +227,7 @@ private partial def asFinset : F → M Expr
     let b ← match binders with
       | #[b] => pure b
       | _ => throwError m!"not supported yet"
-    let .mk rootId <| .binOp (.mk varId <| .var name nameRange) .in_ set := b
+    let .mk _ <| .binOp (.mk _ <| .var name _) .in_ set := b
       | panic! "unsupported"
     -- Get the element type
     let set ← asFinset set
@@ -238,14 +240,15 @@ private partial def asFinset : F → M Expr
       -- Return final expression
       mkAppM ``Finset.image $ (#[·, set]) $
         ← mkLambdaFVars #[fvar] $ ← asWhatever lhs
-  | f => throwError s!"unsupported formula for translation to finset: {f}"
+  | _ => throwError s!"unsupported formula for translation to finset: {f}"
 
 
-private partial def asSet : F → M Expr
-  | .mk id <| .emptySet .set .. => do empty $ some $ ← setType
-  | .mk id <| .var name .. => varToExpr name
-  | .mk id <| .number n .. => throwError s!"cannot translate number {n} into a set"
-  | .mk id <| .binOp left op right .. => do
+private partial def asSet (f : F) : M Expr :=
+  match f.kind with
+  | .emptySet .set .. => do empty $ some $ ← setType
+  | .var name .. => varToExpr name
+  | .number n .. => throwError s!"cannot translate number {n} into a set"
+  | .binOp left op right .. => do
     let leftExpr ← asSet left
     let rightExpr ← asSet right
     let f ← match op with
@@ -253,13 +256,13 @@ private partial def asSet : F → M Expr
       | .cup => pure ``Set.union
       | _ => throwError s!"unsupported binary operator for translation to set: {repr op}"
     mkAppM f #[leftExpr, rightExpr]
-  | .mk id <| .simpleSet .set elements _ => do
+  | .simpleSet .set elements _ => do
     let elements ← elements.mapM (asWhatever · >>= liftM ∘ exprToSyntax)
     let separated : Syntax.TSepArray `term "," := .ofElems elements
     let stx ← ``(({ $separated:term,* } : Set _))
     elabTermEnsuringType stx (some (← setType))
-  | .mk id <| .set .set _ #[] .. => throwError r"'\set{ .. \mid .. }' with no binders"
-  | .mk id <| .set .set lhs rhs .. => do
+  | .set .set _ #[] .. => throwError r"'\set{ .. \mid .. }' with no binders"
+  | .set .set lhs rhs .. => do
     let (binderAbles, nonBinders) := rhs.partition (·.asBinder.isSome)
     let binders := binderAbles.filterMap (·.asBinder)
     if binders.isEmpty then
@@ -285,13 +288,14 @@ private partial def asSet : F → M Expr
             fun b acc => binderToExists b acc
           check pred'
           return pred'
-  | f => throwError s!"unsupported formula for translation to set: {f}"
+  | _ => throwError s!"unsupported formula for translation to set: {f}"
 
 
-private partial def asMultiset : F → M Expr
-  | .mk id <| .emptySet .multiset .. => do empty $ some $ ← multisetType
-  | .mk id <| .var name .. => varToExpr name
-  | .mk id <| .binOp left op right .. => do
+private partial def asMultiset (f : F) : M Expr :=
+  match f.kind with
+  | .emptySet .multiset .. => do empty $ some $ ← multisetType
+  | .var name .. => varToExpr name
+  | .binOp left op right .. => do
     let leftExpr ← asMultiset left
     let rightExpr ← asMultiset right
     let f ← match op with
@@ -301,27 +305,27 @@ private partial def asMultiset : F → M Expr
       | .minus => pure ``Multiset.sub
       | _ => throwError s!"unsupported binary operator for translation to set: {repr op}"
     mkAppM f #[leftExpr, rightExpr]
-  | .mk id <| .simpleSet .multiset elements _ => do
+  | .simpleSet .multiset elements _ => do
     -- TODO: Make this a seprate helper
     let elements ← elements.mapM (asWhatever · >>= liftM ∘ exprToSyntax)
     let separated : Syntax.TSepArray `term "," := .ofElems elements
     let stx ← ``({ $separated:term,* })
     elabTermEnsuringType stx $ some $ ← multisetType
-  | f@(.mk id <| .simpleSet .set ..) => do
+  | .simpleSet .set .. => do
     -- You can only turn a finset into a multiset!
     let s ← asFinset f
     -- mkAppOptM ``Coe.coe #[none, ← multisetType, none, s]
     -- There is actually no coercesion instance for this conversion, so use the
     -- dumb thing.
     mkAppM ``Finset.val #[s]
-  | .mk id <| .set .multiset _ #[] .. => throwError r"'\set{ .. \mid .. }' with no binders"
-  | .mk id <| .set .multiset lhs binders _ => do
+  | .set .multiset _ #[] .. => throwError r"'\set{ .. \mid .. }' with no binders"
+  | .set .multiset lhs binders _ => do
     -- Translate to ``Multiset.pmap, which takes 3 argumets - a mapping with a
     -- predicate, a multi-set, and a proof that the predicate holds for all the
     -- elements of the set. We don't care for the predicate, so we just give it
     -- a constant True.
     let #[
-      .mk rootId <| .binOp (.mk varId <| .var name nameRange) .in_ s
+      .mk _ <| .binOp (.mk _ <| .var name _) .in_ s
     ] := binders | throwError m!"not implemented yet"
     -- This is the set
     let s ← asMultiset s
@@ -340,53 +344,55 @@ private partial def asMultiset : F → M Expr
       withLocalDeclD `h mem fun hFVar => do
           mkLambdaFVars #[aFVar, hFVar] $ .const ``trivial []
     mkAppM ``Multiset.pmap #[f, s, h]
-  | f => throwError s!"unsupported formula for translation to multi-set: {f}"
+  | _ => throwError s!"unsupported formula for translation to multi-set: {f}"
 
 
-private partial def asTuple : F → M Expr
-  | .mk id <| .var name .. => varToExpr name
-  | .mk id <| .tuple elements .. => do
+private partial def asTuple (f : F) : M Expr :=
+  match f.kind with
+  | .var name .. => varToExpr name
+  | .tuple elements .. => do
     let elements ← elements.mapM asWhatever
     Prod.fst <$> mkProdMkN elements
-  | f => throwError s!"unsupported formula for translation to tuple: {f}"
+  | _ => throwError s!"unsupported formula for translation to tuple: {f}"
 
 
-private partial def asProp : F → M Expr
-  | .mk id <| .var name .. => varToExpr name
-  | f@(.mk id <| .binOp ..) => asWhatever f
-  | .mk id <| .forall_ binders rhs _ => do
+private partial def asProp (f : F) : M Expr :=
+  match f.kind with
+  | .var name .. => varToExpr name
+  | .binOp .. => asWhatever f
+  | .forall_ binders rhs _ => do
     let f ← binders.foldr
       (β := M Expr)
       (init := asProp rhs)
       fun b acc => binderToForall b acc
     check f
     return f
-  | f => throwError s!"unsupported formula for translation to proposition: {f}"
+  | _ => throwError s!"unsupported formula for translation to proposition: {f}"
 
 
 private partial def asWhatever (f : F) : M Expr :=
-  match f with
-  | .mk id <| .emptySet .set .. => asSet f
-  | .mk id <| .emptySet .multiset .. => asMultiset f
-  | .mk id <| .var name .. => varToExpr name
-  | .mk id <| .number .. => asNumber f
-  | .mk id <| .app .. =>
+  match f.kind with
+  | .emptySet .set .. => asSet f
+  | .emptySet .multiset .. => asMultiset f
+  | .var name .. => varToExpr name
+  | .number .. => asNumber f
+  | .app .. =>
     -- How could we know?? Let's try some things??
     try asNumber f
     catch e1 => try asSet f
     catch e2 => try asFinset f
     catch e3 => try asMultiset f
     catch e4 => throwError m!"Could not translate {f}.\nErrors:\n{e1}\n{e2}\n{e3}\n{e4}"
-  | .mk id <| .binOp left op right => do
+  | .binOp left op right => do
     let left ← asWhatever left
     let right ← asWhatever right
     binOp op none left right
-  | .mk id <| .simpleSet .set .. => asSet f
-  | .mk id <| .simpleSet .multiset .. => asMultiset f
-  | .mk id <| .set .set .. => asSet f
-  | .mk id <| .set .multiset .. => asMultiset f
-  | .mk id <| .tuple .. => asTuple f
-  | .mk id <| .forall_ .. => asProp f
+  | .simpleSet .set .. => asSet f
+  | .simpleSet .multiset .. => asMultiset f
+  | .set .set .. => asSet f
+  | .set .multiset .. => asMultiset f
+  | .tuple .. => asTuple f
+  | .forall_ .. => asProp f
 
 
 end
@@ -404,16 +410,16 @@ private def definition (id : FId) (name : Name) (f : F) : M LeanCmd := do
 
 
 /-- Translate an axiom. Needs to translate into a proposition. -/
-private def axiom_ (id : FId) (f : F) : M LeanCmd := do
+private def axiom_ (_id : FId) (f : F) : M LeanCmd := do
   -- TODO: Turns out that `getUnusedName` only returns a name not used in the
   -- local context, so we can still get name clashes (because our names get
   -- added to the global scope). Fix this!
   return .axiom_ none $ ← asWhatever f
 
 private def categorizedFormula : CF → M (Option LeanCmd)
-  | .definition id name _ e varId opId => return some (← definition id name e)
+  | .definition id name _ e _varId _opId => return some (← definition id name e)
   | .axiom_ id f => return some (← axiom_ id f)
-  | .plain id .. => return none
+  | .plain _id .. => return none
 
 
 def translate (f : CF) (a : Analysis) : TermElabM (Option LeanCmd) :=
