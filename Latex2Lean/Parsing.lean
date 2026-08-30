@@ -1,14 +1,23 @@
-import Latex2Lean.Util
-import Latex2Lean.InlineMath
-import Latex2Lean.Token
-import Latex2Lean.Formula
+module
 
-import Lean.Message
+public import Latex2Lean.Util
+public import Latex2Lean.InlineMath
+public import Latex2Lean.Token
+public import Latex2Lean.Formula
+public meta import Latex2Lean.InlineMath
+public meta import Latex2Lean.Token
+public meta import Latex2Lean.Formula
+
+public import Lean.Message
+
+public section
+
 
 
 namespace Latex2Lean
 
 
+@[expose]
 def Error := Range × String
 deriving instance DecidableEq, Repr, BEq for Error
 
@@ -18,6 +27,7 @@ abbrev NextId := FId
 instance : Lean.ToMessageData Error where
   toMessageData self := m!"{self.1} {self.2}"
 
+@[expose]
 def T m := StateT (Subarray Token) (StateT NextId (ExceptT Error m))
 abbrev M := T Id
 

@@ -1,12 +1,16 @@
-import Latex2Lean.Util
-import Latex2Lean.Input
-import Latex2Lean.Spanning
-import Latex2Lean.Lexing
-import Latex2Lean.Parsing
-import Latex2Lean.Categorizing
-import Latex2Lean.Analysing
-import Latex2Lean.Translating
-import Latex2Lean.Emitting
+module
+
+public import Latex2Lean.Util
+public import Latex2Lean.Input
+public import Latex2Lean.Spanning
+public import Latex2Lean.Lexing
+public import Latex2Lean.Parsing
+public import Latex2Lean.Categorizing
+public import Latex2Lean.Analysing
+public import Latex2Lean.Translating
+public import Latex2Lean.Emitting
+
+public section
 
 
 namespace Latex2Lean

@@ -1,3 +1,7 @@
+module
+
+public section
+
 /-!
 Missing definitions from standard types and some helpful helpers.
 -/
@@ -13,7 +17,6 @@ instance {m} [Monad m] [Alternative m] : MonadLift Option m where
     | none => failure
 
 
-section
 variable {ε : Type} {m : Type _ → Type _} {α : Type _} [Monad m] [Alternative m]
 
 def ExceptT.failure : ExceptT ε m α :=

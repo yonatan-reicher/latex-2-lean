@@ -1,6 +1,11 @@
-import Std
-import Batteries
-import Latex2Lean.Csv
+module
+
+public import Std
+public import Batteries
+public import Latex2Lean.Csv
+
+public section
+
 
 
 /-!

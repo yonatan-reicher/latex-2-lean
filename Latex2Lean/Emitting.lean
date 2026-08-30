@@ -1,7 +1,12 @@
-import Latex2Lean.Util
-import Latex2Lean.LeanCmd
+module
 
-import Lean
+public import Latex2Lean.Util
+public import Latex2Lean.LeanCmd
+
+public import Lean
+
+public section
+
 
 
 namespace Latex2Lean

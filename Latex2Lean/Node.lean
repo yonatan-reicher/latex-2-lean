@@ -1,4 +1,6 @@
-import Latex2Lean.Node.Basic
-import Latex2Lean.Node.Asserts
-import Latex2Lean.Node.FromString
-import Latex2Lean.Node.ToString
+module
+
+public import Latex2Lean.Node.Basic
+public import Latex2Lean.Node.Asserts
+public import Latex2Lean.Node.FromString
+public import Latex2Lean.Node.ToString

@@ -1,4 +1,9 @@
-import Latex2Lean.InlineMath
+module
+
+public import Latex2Lean.InlineMath
+
+public section
+
 
 
 namespace Latex2Lean

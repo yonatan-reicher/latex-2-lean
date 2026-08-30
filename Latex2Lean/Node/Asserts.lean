@@ -1,4 +1,9 @@
-import Latex2Lean.Node.Basic
+module
+
+public import Latex2Lean.Node.Basic
+
+public section
+
 
 
 namespace Latex2Lean.Node
@@ -28,5 +33,4 @@ def assert2Children (term : Node)
   | _ => 
     let n := term.children.length
     .error s!"Wrong number of arguments to '{term.name}' - expected 2, got {n}"
-
 

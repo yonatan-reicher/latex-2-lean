@@ -1,6 +1,11 @@
-import Latex2Lean.Analysis.Basic
-import Latex2Lean.Analysis.Monad
-import Latex2Lean.Analysis.FromCsvs
+module
+
+public import Latex2Lean.Analysis.Basic
+public import Latex2Lean.Analysis.Monad
+public import Latex2Lean.Analysis.FromCsvs
+
+public section
+
 
 /-!
 The analysis we run is a static analysis that decides certain information about

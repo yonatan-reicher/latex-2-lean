@@ -1,5 +1,10 @@
-import Latex2Lean.Pos
-import Latex2Lean.Range
+module
+
+public import Latex2Lean.Pos
+public import Latex2Lean.Range
+
+public section
+
 
 
 namespace Latex2Lean
@@ -24,20 +29,20 @@ structure Token where
 
 /-- This is like a version of `Token.Kind.word` but that's meant to be used as a
   nicer match pattern, because it has a string argument! -/
-@[match_pattern]
+@[expose, match_pattern]
 def Token.Kind.word' : String → Token.Kind
   | s => .word s.toList.toArray
 
 
 /-- This is like a version of `Token.Kind.command` but that's meant to be used as a
   nicer match pattern, because it has a string argument! -/
-@[match_pattern]
+@[expose, match_pattern]
 def Token.Kind.command' : String → Token.Kind
   | s => .command s.toList.toArray
 
 
 /-- This is like a version of `Token.Kind.symbol` but that's meant to be used as a
   nicer match pattern, because it has a string argument! -/
-@[match_pattern]
+@[expose, match_pattern]
 def Token.Kind.symbol' : String → Token.Kind
   | s => .symbol s.toList.toArray

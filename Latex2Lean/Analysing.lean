@@ -1,7 +1,15 @@
-import Latex2Lean.Util
-import Latex2Lean.CategorizedFormula
-import Latex2Lean.Analysis
-import Latex2Lean.RunAnalysisProcess
+module
+
+public import Latex2Lean.Util
+public import Latex2Lean.CategorizedFormula
+public import Latex2Lean.Analysis
+public import Latex2Lean.RunAnalysisProcess
+public meta import Latex2Lean.Analysis
+public meta import Latex2Lean.RunAnalysisProcess
+public meta import Latex2Lean.CategorizedFormula
+
+public section
+
 
 
 /-!

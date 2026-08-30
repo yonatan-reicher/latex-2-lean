@@ -1,5 +1,10 @@
-import Latex2Lean.Analysis.Basic
-import Std
+module
+
+public import Latex2Lean.Analysis.Basic
+public import Std
+
+public section
+
 
 
 /-!

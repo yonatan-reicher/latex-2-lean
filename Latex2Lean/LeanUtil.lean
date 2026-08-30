@@ -1,4 +1,9 @@
-import Lean
+module
+
+public import Lean
+
+public section
+
 
 /-!
 Utilities for `Lean` (the imported library, not the language :P)

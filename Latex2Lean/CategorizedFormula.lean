@@ -1,9 +1,15 @@
-import Latex2Lean.Formula
+module
+
+public import Latex2Lean.Formula
+
+public section
+
 
 
 namespace Latex2Lean
 
-private abbrev FId := Formula.Id
+-- private abbrev FId := Formula.Id -- doesn't work with the new lean modules
+local macro "FId" : term => `(Formula.Id)
 
 
 inductive CategorizedFormula where

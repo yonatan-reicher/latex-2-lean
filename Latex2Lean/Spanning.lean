@@ -1,7 +1,13 @@
-import Latex2Lean.Util
-import Latex2Lean.Pos
-import Latex2Lean.InlineMath
-import Latex2Lean.Text
+module
+
+public import Latex2Lean.Util
+public import Latex2Lean.Pos
+public import Latex2Lean.InlineMath
+public meta import Latex2Lean.InlineMath
+public import Latex2Lean.Text
+
+public section
+
 
 
 /-!

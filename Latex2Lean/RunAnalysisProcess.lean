@@ -1,6 +1,11 @@
-import Latex2Lean.Csv
-import Latex2Lean.Analysis.Basic
-import Std.Data.HashMap
+module
+
+public import Latex2Lean.Csv
+public import Latex2Lean.Analysis.Basic
+public import Std.Data.HashMap
+
+public section
+
 -- import Batteries
 
 open IO.FS (withTempDir writeFile readFile)

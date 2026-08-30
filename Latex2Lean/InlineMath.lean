@@ -1,6 +1,11 @@
-import Latex2Lean.Util
-import Latex2Lean.Pos
-import Latex2Lean.Text
+module
+
+public import Latex2Lean.Util
+public import Latex2Lean.Pos
+public import Latex2Lean.Text
+
+public section
+
 
 
 namespace Latex2Lean.InlineMath
