@@ -1,8 +1,7 @@
 import Latex2Lean.Util
 import Latex2Lean.CategorizedFormula
 import Latex2Lean.Analysis
-import Latex2Lean.Souffle
-import Latex2Lean.Node
+import Latex2Lean.RunAnalysisProcess
 
 
 /-!
@@ -32,52 +31,60 @@ private def BinOp.toNodeName : BinOp → String
   | .times => "times"
 
 
-mutual
-
-partial def Formula.toNode : Formula → Node
-  | .emptySet _ _ => ⟨"new-set", []⟩
-  | .var name _ => ⟨String.mk name.toList, []⟩
-  | .number n _ => ⟨ToString.toString n, []⟩
-  | .app ⟨"\\abs", _⟩ arg => ⟨"abs", [arg.toNode]⟩
-  | .app ⟨"\\name", _⟩ arg => ⟨"abs", [arg.toNode]⟩
-  | .app ⟨"\\sum", _⟩ arg => ⟨"sum", [arg.toNode]⟩
-  | .app ⟨name, _⟩ _ => panic! s!"don't know how to turn function {name} to node"
-  | .binOp left op right => ⟨op.toNodeName, [left.toNode, right.toNode]⟩
-  | .simpleSet _ elements _ => ⟨"new-set", elements.toList.map toNode⟩
-  | .mapSet _ lhs binders _ => ⟨"map", lhs.toNode :: binders.toList.map Formula.Binder.toNode⟩
-  | .tuple elements _ => ⟨"tuple", elements.toList.map toNode⟩
-  | .forall_ binders rhs _ =>
-    ⟨"forall", binders.toList.map (·.toNode) ++ [rhs.toNode]⟩
-
-partial def Formula.Binder.toNode : Formula.Binder → Node
-  | .in_ name set => ⟨"in", [⟨String.mk name.toList, []⟩, set.toNode]⟩
-
-end
+abbrev commaSep {α} [ToString α] (l : List α) : String := ",".intercalate <| l.map toString
+abbrev commaSepIds (l : List Formula) := commaSep <| l.map Formula.id
 
 
-private def csvs (formulas : Subarray CategorizedFormula) : Array Csv := Id.run do
-  let mut assumptions := #[]
-  let mut expressions := #[]
-  for f in formulas do
-    let isAssumption := match f with
-      | .definition .. | .axiom_ .. => true
-      | .plain .. => false
-    let node := f.toFormula.toNode
-    let string := if isAssumption then s!"[ {node.toString} ]" else node.toString
-    let row := #[string].toVector
-    if isAssumption
-    then assumptions := assumptions.push row
-    else expressions := expressions.push row
-  return #[
-    Csv.mk (n:=1) "assumption.csv" assumptions,
-    Csv.mk (n:=1) "expr.csv" expressions,
-  ]
+instance : ToString (Array Char) where toString := String.ofList ∘ Array.toList
 
+
+def Formula.toAnalysisInputLine (f : Formula) : String :=
+  s!"{show Nat from f.id},{dispatch f.kind}"
+where
+  dispatch : Kind → String
+  | .emptySet _ _ => s!"set"
+  | .var name _ => s!"var,{name}"
+  | .number n _ => s!"num,{n}"
+  | .app f x => s!"app,{f.name},{x.id}"
+  | .binOp left .eq right => s!"eq,{left.id},{right.id}"
+  | .binOp left op right => s!"op,{op},{left.id},{right.id}"
+  | .simpleSet .set elements _ => s!"set,{commaSepIds elements.toList}"
+  | .simpleSet .multiset elements _ => s!"multiset,{commaSepIds elements.toList}"
+  | .set k lhs rhs _ =>
+    let kind := match k with
+      | .set => "set"
+      | .multiset => "multiset"
+    s!"{kind},{lhs.id},{commaSepIds rhs.toList}"
+  | .tuple elements _ => s!"tuple,{commaSepIds elements.toList}"
+  | .forall_ binders rhs _ => s!"forall,{rhs.id},{commaSepIds <| binders.toList.map (·.toFormula)}"
+
+partial def Formula.Binder.toAnalysisInputLine (b : Binder) : String :=
+  b.toFormula.toAnalysisInputLine
+
+def CategorizedFormula.toAnalysisInputLine : CategorizedFormula → String
+  | .definition id (opId:=rootId) .. => s!"{id},definition,{rootId}"
+  | .axiom_ id f => s!"{id},axiom,{f.id}"
+  | .plain id f => s!"{id},plain,{f.id}"
+
+partial def makeAnalysisInput (roots : Array CategorizedFormula) : String :=
+  "\n".intercalate <|
+    "id,kind,arguments"
+    :: (roots.map (·.toAnalysisInputLine) |>.toList)
+    ++ (roots.flatMap (toAnalysisInputLineRecursive ·.toFormula) |>.toList)
+where
+  toAnalysisInputLineRecursive (f : Formula) : Array String :=
+    let (childFormulas, childBinders) := f.children
+    #[ f.toAnalysisInputLine ]
+    ++ childFormulas.flatMap toAnalysisInputLineRecursive
+    ++ childBinders.flatMap (toAnalysisInputLineRecursive ·.toFormula)
 
 def analyze (formulas : Subarray CategorizedFormula) : IO Analysis := do
-  let csvs := csvs formulas
-  let result <- Souffle.call csvs (wsl := false)
-  AnalysisResult.fromCsvs result.toList |> IO.ofExcept
+  let input := makeAnalysisInput formulas
+  let (_stdout, outputs) ← runAnalysisProcess input
+  -- IO.println stdout
+  .ofExcept <| Analysis.fromCsvs <| outputs.toList.map fun (name, csv) =>
+    -- rename
+    { csv with fileName := name }
 
 
 /-- info: true -/
@@ -86,19 +93,22 @@ def analyze (formulas : Subarray CategorizedFormula) : IO Analysis := do
   return a == default
 
 /-- info: true -/
-#guard_msgs in #eval do
+#guard_msgs in
+#eval do
   let a ← analyze #[
-      CategorizedFormula.definition "A" default (Formula.var "A" default),
+      CategorizedFormula.definition 0 "A" default (.mk 1 <| .var "A" default) 2 3,
     ].toSubarray
   return a == default
 
 /-- info: true -/
-#guard_msgs in #eval do
+#guard_msgs in
+#eval do
   let a ← analyze #[
-      CategorizedFormula.definition "A" default (Formula.emptySet .set default),
+      CategorizedFormula.definition 0 "A" default (.mk 1 <| .simpleSet .set #[.mk 4 <| .number 1 default] default) 2 3,
+      .plain 5 <| .mk 6 <| .var "A" default,
     ].toSubarray
   return a == {
-    isFiniteSet := .ofArray #[ ⟨"A", []⟩, ⟨"new-set", []⟩ ],
+    isFiniteSet := .ofArray #[ 1, 2, 6 ],
     mustBeFiniteSet := .ofArray #[],
     : Analysis
   }

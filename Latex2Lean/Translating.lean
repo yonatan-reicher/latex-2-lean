@@ -32,7 +32,8 @@ open Lean.Meta
 private abbrev CF := CategorizedFormula
 private abbrev F := Formula
 private abbrev Name := Array Char
-private abbrev M := ReaderT Analysis TermElabM
+private abbrev M := AnalysisReaderT TermElabM
+private abbrev FId := Formula.Id
 
 
 instance : MonadLift CoreM M where monadLift := fun x _ => x
@@ -40,15 +41,6 @@ instance : MonadLift MetaM M where monadLift := fun x _ => x
 
 
 -- Helpers
-
-private def isFiniteSet (name : Name) : M Bool := do
-  let isFiniteSet := (← read).isFiniteSet
-  return isFiniteSet.contains ⟨name, []⟩
-
-private def mustBeFiniteSet (name : Name) : M Bool := do
-  let mustBeFiniteSet := (← read).mustBeFiniteSet
-  return mustBeFiniteSet.contains ⟨name, []⟩
-
 
 private def varToIdent (name : Name) : Ident := mkIdent (.mkSimple name)
 
@@ -109,7 +101,7 @@ private def multisetType : MetaM Expr := Prod.fst <$> multisetType'
 
 /-- Get the element type of a set or a finset -/
 private def getSetElement (e : Expr) : M (Option Expr) :=
-  withNewMCtxDepth do
+  withNewMCtxDepth <| show OptionT M Expr from do
     let (setType, setElementType) ← setType'
     let (finsetType, finsetElementType) ← finsetType'
     let (multisetType, multisetElementType) ← multisetType'
@@ -117,7 +109,7 @@ private def getSetElement (e : Expr) : M (Option Expr) :=
       if ← isDefEq e setType then pure setElementType
       else if ← isDefEq e finsetType then pure finsetElementType
       else if ← isDefEq e multisetType then pure multisetElementType
-      else none
+      else failure
     return ← instantiateMVars outMVar
 
 
@@ -146,19 +138,26 @@ where toStx : BinOp → Term → Term → M Term
   | .times, a, b => ``($a × $b)
 
 
+def Formula.asBinder (f : Formula) : Option Formula.Binder :=
+  match f.kind with
+  | .binOp (.mk varId <| .var varName varRange) .in_ rhs =>
+    some <| .in_ varId f.id varName varRange rhs
+  | _ => none
+
+
 mutual
 
 
 /-- Translate a binder to an exists expression. -/
 @[inline]
 private partial def binderToExists : Formula.Binder → (rhs : M Expr) → M Expr
-  | .in_ name set, rhs => do
+  | .in_ (name:=name) (set:=set) .., rhs => do
     -- First translate the set, and extract the element type.
     let set ← asWhatever set
     check set -- Must call this before the next action!
     let type ← inferType set
     let some elementType ← getSetElement type
-      | throwError m!"{set} must be a set, but had type {type}."
+      | throwError m!"'{set}' must be a set, but had type '{type}'."
     -- Declare the variable!
     withLocalDeclD (.mkSimple name) elementType fun fvar => do
       -- Now make some syntax.
@@ -169,13 +168,13 @@ private partial def binderToExists : Formula.Binder → (rhs : M Expr) → M Exp
 /-- Translate a binder to an exists expression. -/
 @[inline]
 private partial def binderToForall : Formula.Binder → (rhs : M Expr) → M Expr
-  | .in_ name set, rhs => do
+  | .in_ (name:=name) (set:=set) .., rhs => do
     -- First translate the set, and extract the element type.
     let set ← asWhatever set
     check set -- Must call this before the next action!
     let type ← inferType set
     let some elementType ← getSetElement type
-      | throwError m!"{set} must be a set, but had type {type}."
+      | throwError m!"'{set}' must be a set, but had type '{type}'."
     -- Declare the variable!
     withLocalDeclD (.mkSimple name) elementType fun fvar => do
       -- And declare a variable for the assumption that it is in the set.
@@ -185,7 +184,8 @@ private partial def binderToForall : Formula.Binder → (rhs : M Expr) → M Exp
         mkForallFVars #[fvar, hFVar] $ ← rhs
 
 
-private partial def asNumber : F → M Expr
+private partial def asNumber (f : F) : M Expr :=
+  match f.kind with
   | .var name .. => varToExpr name
   | .number n .. => return mkNatLit n
   | .app ⟨"\\abs", _⟩ inner => do
@@ -203,10 +203,11 @@ private partial def asNumber : F → M Expr
       | .star => pure ``HMul.hMul
       | _ => throwError s!"unsupported binary operator for translation to number: {repr op}"
     mkAppM f #[leftExpr, rightExpr]
-  | f => throwError s!"unsupported formula for translation to number: {f}"
+  | _ => throwError s!"unsupported formula for translation to number: {f}"
 
 
-private partial def asFinset : F → M Expr
+private partial def asFinset (f : F) : M Expr :=
+  match f.kind with
   | .emptySet .set .. => mkAppM ``Finset.empty #[]
   | .var name .. => varToExpr name
   | .number n .. => throwError s!"cannot translate number {n} into a finset"
@@ -216,8 +217,8 @@ private partial def asFinset : F → M Expr
     let list ← mkListLit (←mkFreshTypeMVar) elements.toList
     check list
     mkAppM ``List.toFinset #[list]
-  | .mapSet .set _ #[] .. => throwError s!"mapSet with no binders" -- TODO
-  | .mapSet .set lhs binders .. => do
+  | .set .set _ #[] .. => throwError r"'\set{ .. \mid .. }' with no binders"
+  | .set .set lhs binders .. => do
     -- We need to generate calls to finset operations and assume that the things
     -- given can be translated to finsets. For `{ x + 1 | x \in A }`, we want to
     -- use `Finset.image`, like this `A.image fun x => x + 1`. For multiple
@@ -226,7 +227,8 @@ private partial def asFinset : F → M Expr
     let b ← match binders with
       | #[b] => pure b
       | _ => throwError m!"not supported yet"
-    let .in_ name set := b
+    let .mk _ <| .binOp (.mk _ <| .var name _) .in_ set := b
+      | panic! "unsupported"
     -- Get the element type
     let set ← asFinset set
     check set
@@ -238,10 +240,11 @@ private partial def asFinset : F → M Expr
       -- Return final expression
       mkAppM ``Finset.image $ (#[·, set]) $
         ← mkLambdaFVars #[fvar] $ ← asWhatever lhs
-  | f => throwError s!"unsupported formula for translation to finset: {f}"
+  | _ => throwError s!"unsupported formula for translation to finset: {f}"
 
 
-private partial def asSet : F → M Expr
+private partial def asSet (f : F) : M Expr :=
+  match f.kind with
   | .emptySet .set .. => do empty $ some $ ← setType
   | .var name .. => varToExpr name
   | .number n .. => throwError s!"cannot translate number {n} into a set"
@@ -258,8 +261,12 @@ private partial def asSet : F → M Expr
     let separated : Syntax.TSepArray `term "," := .ofElems elements
     let stx ← ``(({ $separated:term,* } : Set _))
     elabTermEnsuringType stx (some (← setType))
-  | .mapSet .set _ #[] .. => throwError s!"mapSet with no binders" -- TODO
-  | .mapSet .set lhs binders .. => do
+  | .set .set _ #[] .. => throwError r"'\set{ .. \mid .. }' with no binders"
+  | .set .set lhs rhs .. => do
+    let (binderAbles, nonBinders) := rhs.partition (·.asBinder.isSome)
+    let binders := binderAbles.filterMap (·.asBinder)
+    if binders.isEmpty then
+      throwError s!"this set expression does not bind any variables"
     -- We want to generate `{ lhs | (x ∈ A) (y ∈ B) }`. This is actually pretty
     -- hard to generate this as syntax, because of how free variables interact
     -- with syntax and the expressions. So instead we generate
@@ -269,16 +276,23 @@ private partial def asSet : F → M Expr
     mkAppM ``setOf $ Array.singleton $
       ← withLocalDeclD aName aType fun aFVar => do
         mkLambdaFVars #[aFVar] $ ← do
-          let pred ← binders.foldl
+          -- Make a predicate for the non-binders
+          let pred : M Expr := do mkEq aFVar $ ← asWhatever lhs
+          let pred := nonBinders
+            |>.map asProp
+            |>.foldr (init := pred) fun acc e => return mkAnd (← acc) (← e)
+          -- Add onto it the existentials from the binders
+          let pred' ← binders.foldr
             (β := M Expr)
-            (init := do mkEq aFVar $ ← asWhatever lhs)
-            fun acc b => binderToExists b acc
-          check pred
-          return pred
-  | f => throwError s!"unsupported formula for translation to set: {f}"
+            (init := pred)
+            fun b acc => binderToExists b acc
+          check pred'
+          return pred'
+  | _ => throwError s!"unsupported formula for translation to set: {f}"
 
 
-private partial def asMultiset : F → M Expr
+private partial def asMultiset (f : F) : M Expr :=
+  match f.kind with
   | .emptySet .multiset .. => do empty $ some $ ← multisetType
   | .var name .. => varToExpr name
   | .binOp left op right .. => do
@@ -297,20 +311,22 @@ private partial def asMultiset : F → M Expr
     let separated : Syntax.TSepArray `term "," := .ofElems elements
     let stx ← ``({ $separated:term,* })
     elabTermEnsuringType stx $ some $ ← multisetType
-  | f@(.simpleSet .set ..) => do
+  | .simpleSet .set .. => do
     -- You can only turn a finset into a multiset!
     let s ← asFinset f
     -- mkAppOptM ``Coe.coe #[none, ← multisetType, none, s]
     -- There is actually no coercesion instance for this conversion, so use the
     -- dumb thing.
     mkAppM ``Finset.val #[s]
-  | .mapSet .multiset _ #[] .. => throwError s!"mapSet with no binders" -- TODO
-  | .mapSet .multiset lhs binders _ => do
+  | .set .multiset _ #[] .. => throwError r"'\set{ .. \mid .. }' with no binders"
+  | .set .multiset lhs binders _ => do
     -- Translate to ``Multiset.pmap, which takes 3 argumets - a mapping with a
     -- predicate, a multi-set, and a proof that the predicate holds for all the
     -- elements of the set. We don't care for the predicate, so we just give it
     -- a constant True.
-    let #[.in_ name s] := binders | throwError m!"not implemented yet"
+    let #[
+      .mk _ <| .binOp (.mk _ <| .var name _) .in_ s
+    ] := binders | throwError m!"not implemented yet"
     -- This is the set
     let s ← asMultiset s
     check s
@@ -328,20 +344,22 @@ private partial def asMultiset : F → M Expr
       withLocalDeclD `h mem fun hFVar => do
           mkLambdaFVars #[aFVar, hFVar] $ .const ``trivial []
     mkAppM ``Multiset.pmap #[f, s, h]
-  | f => throwError s!"unsupported formula for translation to multi-set: {f}"
+  | _ => throwError s!"unsupported formula for translation to multi-set: {f}"
 
 
-private partial def asTuple : F → M Expr
+private partial def asTuple (f : F) : M Expr :=
+  match f.kind with
   | .var name .. => varToExpr name
   | .tuple elements .. => do
     let elements ← elements.mapM asWhatever
     Prod.fst <$> mkProdMkN elements
-  | f => throwError s!"unsupported formula for translation to tuple: {f}"
+  | _ => throwError s!"unsupported formula for translation to tuple: {f}"
 
 
-private partial def asProp : F → M Expr
+private partial def asProp (f : F) : M Expr :=
+  match f.kind with
   | .var name .. => varToExpr name
-  | f@(.binOp ..) => asWhatever f
+  | .binOp .. => asWhatever f
   | .forall_ binders rhs _ => do
     let f ← binders.foldr
       (β := M Expr)
@@ -349,11 +367,11 @@ private partial def asProp : F → M Expr
       fun b acc => binderToForall b acc
     check f
     return f
-  | f => throwError s!"unsupported formula for translation to proposition: {f}"
+  | _ => throwError s!"unsupported formula for translation to proposition: {f}"
 
 
 private partial def asWhatever (f : F) : M Expr :=
-  match f with
+  match f.kind with
   | .emptySet .set .. => asSet f
   | .emptySet .multiset .. => asMultiset f
   | .var name .. => varToExpr name
@@ -371,8 +389,8 @@ private partial def asWhatever (f : F) : M Expr :=
     binOp op none left right
   | .simpleSet .set .. => asSet f
   | .simpleSet .multiset .. => asMultiset f
-  | .mapSet .set .. => asSet f
-  | .mapSet .multiset .. => asMultiset f
+  | .set .set .. => asSet f
+  | .set .multiset .. => asMultiset f
   | .tuple .. => asTuple f
   | .forall_ .. => asProp f
 
@@ -381,11 +399,10 @@ end
 
 
 /-- Translate a definition. Needs to decide the type to translate into. -/
-private def definition (name : Name) (f : F) : M LeanCmd := do
+private def definition (id : FId) (name : Name) (f : F) : M LeanCmd := do
   let leanName := Name.mkSimple name
-  if ← mustBeFiniteSet name
-  then
-    if ← isFiniteSet name
+  if ← mustBeFiniteSet id then
+    if ← isFiniteSet id
     then return .def_ leanName (← asFinset f)
     else throwError s!"'{Name.mkSimple name}' must be a Finset but could not be inferred as finite"
   else
@@ -393,16 +410,16 @@ private def definition (name : Name) (f : F) : M LeanCmd := do
 
 
 /-- Translate an axiom. Needs to translate into a proposition. -/
-private def axiom_ (f : F) : M LeanCmd := do
+private def axiom_ (_id : FId) (f : F) : M LeanCmd := do
   -- TODO: Turns out that `getUnusedName` only returns a name not used in the
   -- local context, so we can still get name clashes (because our names get
   -- added to the global scope). Fix this!
   return .axiom_ none $ ← asWhatever f
 
 private def categorizedFormula : CF → M (Option LeanCmd)
-  | .definition name _ e => return some (← definition name e)
-  | .axiom_ f => return some (← axiom_ f)
-  | .plain .. => return none
+  | .definition id name _ e _varId _opId => return some (← definition id name e)
+  | .axiom_ id f => return some (← axiom_ id f)
+  | .plain _id .. => return none
 
 
 def translate (f : CF) (a : Analysis) : TermElabM (Option LeanCmd) :=

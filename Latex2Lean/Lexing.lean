@@ -38,7 +38,7 @@ private def word : Text.M Token.Kind := .word <$> manyChars Char.isAlphanum
 
 private def number : Text.M Token.Kind := do
   let digits ← manyChars Char.isDigit
-  let numStr := String.mk digits.toList
+  let numStr := String.ofList digits.toList
   -- We know this call will succeed because we only collected digits
   let num := numStr.toNat!
   return .number num
@@ -53,9 +53,9 @@ private def symbols : Array String := #[
   "..",
 ]
 #guard symbols.map (·.length) |>.foldl max 0 |> (· == 2)
-private def symbolStarts : Array Char := symbols.filterMap fun s => s.get 0
+private def symbolStarts : Array Char := symbols.filterMap fun s => String.Pos.Raw.get s 0
 private def isSymbolSecondChar (first : Char) (second : Char) : Bool :=
-  symbols.contains (String.mk [first, second])
+  symbols.contains (String.ofList [first, second])
 
 private def error : Text.M Token.Kind := .error <$> manyChars (!·.isWhitespace)
 

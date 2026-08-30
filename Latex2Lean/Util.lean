@@ -49,7 +49,7 @@ Splits a string at the delimiter, but respects parentheses.
 -/
 def splitButParens (text : String) (delim : Char) (lParen rParen : Char)
 -- TODO: : Array (Array Char) := Id.run do
-: Array Substring := Id.run do
+: Array String.Slice := Id.run do
   let mut depth : Int := 0
   let mut startIdx := 0
   let mut endIdx := 0
@@ -58,21 +58,26 @@ def splitButParens (text : String) (delim : Char) (lParen rParen : Char)
     if c == lParen then depth := depth + 1
     if c == rParen then depth := depth - 1
     if depth == 0 && c == delim then
-      let substring := Substring.mk text startIdx endIdx
+      let substring := Substring.Raw.mk text startIdx endIdx
       ret := ret.push substring
       startIdx := endIdx + c
       endIdx := startIdx
     else
       endIdx := endIdx + c
-  let substring := Substring.mk text startIdx endIdx
+  let substring := Substring.Raw.mk text startIdx endIdx
   ret := ret.push substring
-  return ret
+  return ret.map fun s => match s.toSlice? with
+    | some s => s
+    | none => panic! s!"something went very wrong with this code. splitOfParens on '{s}'"
+
+def Slice.splitButParens (text : String.Slice) :=
+  text.copy.splitButParens
 
 -- This is a unit test for the function above
 #guard
   "hello, [world, 2], 3"
   |>.splitButParens ',' '[' ']'
-  |>.map (·.toString)
+  |>.map (·.copy)
   |> (. == #["hello", " [world, 2]", " 3"])
 
 end String
@@ -84,10 +89,10 @@ macro "unfold " id:ident* " in " term:term : term =>
   `(by unfold $(id)* at *; exact $(term))
 
 
-instance : Coe (Array Char) String where
-  coe chars := String.mk chars.toList
-instance : Coe String (Array Char) where
+instance : CoeHead (Array Char) String where
+  coe chars := String.ofList chars.toList
+instance : CoeHead String (Array Char) where
   coe s := s.toList.toArray
 
-instance {α} : Coe (Array α) (Subarray α) where
+instance {α} : CoeHead (Array α) (Subarray α) where
   coe arr := arr.toSubarray

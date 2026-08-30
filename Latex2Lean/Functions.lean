@@ -39,15 +39,17 @@ def defineLatex {I} [Input I] (inp : I) (verbose : Bool := false)
   let tokens : Array (InlineMath.Kind × Array Token) := spans
     |>.map fun (kind, s) => (kind, lex s.text s.start)
   -- 4. Parse the tokens into formulas
-  let formulas : Array (InlineMath.Kind × Formula) ←
-    tokens.filterMapM fun (kind, t) =>
-      match parse kind t with
-      | .ok f => pure (kind, f)
-      | .error e => do
-        Lean.logWarning m!"Error during parsing: {e}"
-        return none
+  let (formulas, nextId) ←
+    StateT.run (σ:=NextId) (s:=0) do
+      tokens.filterMapM fun (kind, t) => do
+        match parse kind t (← getThe NextId) with
+        | .ok (f, nextId') => set nextId'; return some (kind, f)
+        | .error e => do
+          Lean.logWarning m!"Error during parsing: {e}"
+          return none
   -- 5. Categorize the formulas
-  let categorizedFormulas := formulas.map (Prod.map id categorize)
+  let (categorizedFormulas, _nextId) := StateT.run (σ:=NextId) (s:=nextId) (m:=Id) do
+    formulas.mapM fun (k, f) => return (k, categorize (← popId) f)
   -- 6. Analyze
   let analysis ← analyze (categorizedFormulas.map Prod.snd)
   -- 7+8. Translate and immediately emit each command so that each definition

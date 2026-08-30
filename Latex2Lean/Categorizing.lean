@@ -5,13 +5,14 @@ import Latex2Lean.CategorizedFormula
 
 namespace Latex2Lean
 
-def categorize : Formula → CategorizedFormula
-  | .binOp (.var name nameRange) .eq right => .definition name nameRange right
-  | f@(.binOp _ op _) => if op.predicative then .axiom_ f else .plain f
-  | f@(.forall_ ..) => .axiom_ f
-  | f => .plain f
+def categorize (id : Formula.Id) : Formula → CategorizedFormula
+  | .mk opId <| .binOp (.mk varId <| .var name nameRange) .eq right =>
+    .definition id name nameRange right varId opId
+  | f@(.mk _ <| .binOp _ op _) => if op.predicative then .axiom_ id f else .plain id f
+  | f@(.mk _ <| .forall_ ..) => .axiom_ id f
+  | f => .plain id f
 
 
 #guard
-  categorize (.binOp (.var "X" default) .subseteq (.var "Y" default))
-  |> fun | .axiom_ _ => true | _ => false
+  categorize 0 (.mk 1 <| .binOp (.mk 2 <| .var "X" default) .subseteq (.mk 3 <| .var "Y" default))
+  |> fun | .axiom_ .. => true | _ => false

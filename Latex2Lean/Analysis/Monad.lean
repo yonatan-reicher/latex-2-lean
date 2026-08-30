@@ -13,6 +13,7 @@ namespace Latex2Lean
 
 
 open Std (HashSet)
+open Formula (Id)
 
 
 namespace AnalysisReaderT
@@ -22,14 +23,14 @@ variable {α}
 variable {m} [Monad m]
 
 
-def isFiniteSet (node : Node) : AnalysisReaderT m Bool := do
+def isFiniteSet (id : Id) : AnalysisReaderT m Bool := do
   let result <- read
-  return result.isFiniteSet.contains node
+  return result.isFiniteSet.contains id
 
 
-def mustBeFiniteSet (node : Node) : AnalysisReaderT m Bool := do
+def mustBeFiniteSet (id : Id) : AnalysisReaderT m Bool := do
   let result <- read
-  return result.mustBeFiniteSet.contains node
+  return result.mustBeFiniteSet.contains id
 
 
 def run (analysis : Analysis) (action : AnalysisReaderT m α) : m α :=
