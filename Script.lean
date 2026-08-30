@@ -41,5 +41,6 @@ instance {m} [Monad m] : MonadLift m (ArrayT m) where
   let (before, after) := partitionByImports text
   let reconstructed := reconstruct before after
   IO.println reconstructed
+  -- IO.FS.writeFile path reconstructed
   return (path, reconstructed)
 
