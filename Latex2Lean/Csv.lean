@@ -1,6 +1,7 @@
 module
 
 public import Latex2Lean.Util
+public meta import Latex2Lean.Util
 public import Std.Data.HashSet.Basic
 
 public section

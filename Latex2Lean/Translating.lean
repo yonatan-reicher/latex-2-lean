@@ -30,15 +30,18 @@ code.
 namespace Latex2Lean
 
 open Batteries.ExtendedBinder
-open Lean
+open Lean hiding Name
 open Lean.Elab.Term
 open Lean.Meta
 
-private abbrev CF := CategorizedFormula
-private abbrev F := Formula
-private abbrev Name := Array Char
-private abbrev M := AnalysisReaderT TermElabM
-private abbrev FId := Formula.Id
+namespace Aliases
+public abbrev CF := CategorizedFormula
+public abbrev F := Formula
+public abbrev Name := Array Char
+public abbrev M := AnalysisReaderT TermElabM
+public abbrev FId := Formula.Id
+end Aliases
+open Aliases
 
 
 instance : MonadLift CoreM M where monadLift := fun x _ => x
@@ -285,14 +288,14 @@ private partial def asSet (f : F) : M Expr :=
           let pred : M Expr := do mkEq aFVar $ ← asWhatever lhs
           let pred := nonBinders
             |>.map asProp
-            |>.foldr (init := pred) fun acc e => return mkAnd (← acc) (← e)
+            |>.foldr (init := pred) fun acc e => do pure $ mkAnd (← acc) (← e)
           -- Add onto it the existentials from the binders
           let pred' ← binders.foldr
             (β := M Expr)
             (init := pred)
             fun b acc => binderToExists b acc
           check pred'
-          return pred'
+          pure pred'
   | _ => throwError s!"unsupported formula for translation to set: {f}"
 
 
