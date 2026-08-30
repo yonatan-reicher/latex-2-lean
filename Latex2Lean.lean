@@ -1,28 +1,30 @@
+module
+
 -- Common things
-import Latex2Lean.Basic
-import Latex2Lean.Util
-import Latex2Lean.LeanUtil
+public import Latex2Lean.Basic
+public import Latex2Lean.Util
+public import Latex2Lean.LeanUtil
 -- Types
-import Latex2Lean.Pos
-import Latex2Lean.Range
-import Latex2Lean.Text
-import Latex2Lean.InlineMath
-import Latex2Lean.Token
-import Latex2Lean.Formula
-import Latex2Lean.CategorizedFormula
-import Latex2Lean.Node
-import Latex2Lean.Analysis
-import Latex2Lean.Csv
-import Latex2Lean.LeanCmd
+public import Latex2Lean.Pos
+public import Latex2Lean.Range
+public import Latex2Lean.Text
+public import Latex2Lean.InlineMath
+public import Latex2Lean.Token
+public import Latex2Lean.Formula
+public import Latex2Lean.CategorizedFormula
+public import Latex2Lean.Node
+public import Latex2Lean.Analysis
+public import Latex2Lean.Csv
+public import Latex2Lean.LeanCmd
 -- The different stages of our process
-import Latex2Lean.Input
-import Latex2Lean.Spanning
-import Latex2Lean.Lexing
-import Latex2Lean.Parsing
-import Latex2Lean.Categorizing
-import Latex2Lean.Analysing
-import Latex2Lean.Translating
-import Latex2Lean.Emitting
+public import Latex2Lean.Input
+public import Latex2Lean.Spanning
+public import Latex2Lean.Lexing
+public import Latex2Lean.Parsing
+public import Latex2Lean.Categorizing
+public import Latex2Lean.Analysing
+public import Latex2Lean.Translating
+public import Latex2Lean.Emitting
 -- Final API
-import Latex2Lean.Functions
-import Latex2Lean.Macros
+public import Latex2Lean.Functions
+public import Latex2Lean.Macros

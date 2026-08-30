@@ -1,6 +1,11 @@
-import Latex2Lean.Util
-import Latex2Lean.Pos
-import Latex2Lean.Range
+module
+
+public import Latex2Lean.Util
+public import Latex2Lean.Pos
+public import Latex2Lean.Range
+
+public section
+
 
 
 namespace Latex2Lean
@@ -98,6 +103,7 @@ inductive SetKind
   deriving Inhabited, DecidableEq, Repr
 
 
+@[expose]
 def Formula.Id := Nat
 deriving instance DecidableEq, Inhabited, Repr, ToString, Hashable for Formula.Id
 instance {n} : OfNat Formula.Id n := ⟨n⟩

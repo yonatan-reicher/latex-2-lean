@@ -1,5 +1,10 @@
-import Latex2Lean.Util
-import Latex2Lean.Pos
+module
+
+public import Latex2Lean.Util
+public import Latex2Lean.Pos
+
+public section
+
 
 
 namespace Latex2Lean.Text
@@ -13,7 +18,7 @@ instance : Coe String Text where
   coe s := s.toList.toArray.toSubarray
 
 
-@[irreducible]
+@[expose, irreducible]
 def T m [Monad m] := ReaderT Text <| StateT Pos <| StateT Index <| m
 abbrev M := T Id
 

@@ -1,6 +1,13 @@
-import Latex2Lean.Text
-import Latex2Lean.InlineMath
-import Latex2Lean.Token
+module
+
+public import Latex2Lean.Text
+public import Latex2Lean.InlineMath
+public import Latex2Lean.Token
+public meta import Latex2Lean.Text
+public meta import Latex2Lean.Token
+
+public section
+
 
 
 namespace Latex2Lean

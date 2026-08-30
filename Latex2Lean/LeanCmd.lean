@@ -1,5 +1,10 @@
-import Lean.Expr
-import Lean.PrettyPrinter
+module
+
+public import Lean.Expr
+public import Lean.PrettyPrinter
+
+public section
+
 
 
 namespace Latex2Lean

@@ -1,5 +1,10 @@
-import Latex2Lean.Util
-import Std.Data.HashSet.Basic
+module
+
+public import Latex2Lean.Util
+public import Std.Data.HashSet.Basic
+
+public section
+
 
 
 namespace Latex2Lean

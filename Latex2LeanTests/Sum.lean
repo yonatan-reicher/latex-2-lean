@@ -1,5 +1,10 @@
-import Latex2Lean
-import Mathlib
+module
+
+public import Latex2Lean
+public import Mathlib
+
+public section
+
 
 define_latex r"Let $X = \sum \mset{ 1, 2, 3 }$"
 example : X = 6 := by decide
@@ -15,4 +20,3 @@ def y := s'.sum
 #print s'
 #reduce y
 #print y
-

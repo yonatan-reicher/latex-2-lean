@@ -1,6 +1,9 @@
-import Latex2Lean
-import Mathlib
+module
 
+public import Latex2Lean
+public import Mathlib
+
+public section
 
 axiom D : Set (Set (Nat × Nat))
 define_latex file verbose "proof-adjusted.md"

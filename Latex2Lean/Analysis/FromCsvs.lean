@@ -1,6 +1,11 @@
-import Latex2Lean.Analysis.Basic
-import Latex2Lean.Csv
-import Latex2Lean.Node.FromString
+module
+
+public import Latex2Lean.Analysis.Basic
+public import Latex2Lean.Csv
+public import Latex2Lean.Node.FromString
+
+public section
+
 
 
 namespace Latex2Lean

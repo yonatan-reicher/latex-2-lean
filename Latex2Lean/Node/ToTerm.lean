@@ -1,14 +1,19 @@
-import Latex2Lean.Analysis.Basic
-import Latex2Lean.Analysis.Monad
-import Latex2Lean.Node.Asserts
-import Latex2Lean.Node.Basic
-import Latex2Lean.Node.ToString
-import Latex2Lean.Except
-import Lean
-import Mathlib.Data.Finset.Defs
-import Mathlib.Data.Finset.Card
-import Mathlib.Data.Set.Defs
-import Std
+module
+
+public import Latex2Lean.Analysis.Basic
+public import Latex2Lean.Analysis.Monad
+public import Latex2Lean.Node.Asserts
+public import Latex2Lean.Node.Basic
+public import Latex2Lean.Node.ToString
+public import Latex2Lean.Except
+public import Lean
+public import Mathlib.Data.Finset.Defs
+public import Mathlib.Data.Finset.Card
+public import Mathlib.Data.Set.Defs
+public import Std
+
+public section
+
 
 
 open Lean (

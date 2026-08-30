@@ -1,4 +1,9 @@
-import Latex2Lean
+module
+
+public import Latex2Lean
+
+public section
+
 
 def N : Set Nat := .univ
 define_latex r"let $\forall x \in N, 200 = x$"

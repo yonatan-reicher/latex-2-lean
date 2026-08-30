@@ -1,5 +1,12 @@
-import Latex2Lean.Util
-import Latex2Lean.Node.Basic
+module
+
+public import Latex2Lean.Util
+public import Latex2Lean.Node.Basic
+public meta import Latex2Lean.Util
+public meta import Latex2Lean.Node.Basic
+
+public section
+
 
 
 namespace Latex2Lean.Node

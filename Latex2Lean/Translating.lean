@@ -1,20 +1,25 @@
-import Latex2Lean.LeanUtil
-import Latex2Lean.CategorizedFormula
-import Latex2Lean.Analysis
-import Latex2Lean.LeanCmd
+module
+
+public import Latex2Lean.LeanUtil
+public import Latex2Lean.CategorizedFormula
+public import Latex2Lean.Analysis
+public import Latex2Lean.LeanCmd
 
 -- Finset
-import Mathlib.Data.Finset.Basic
-import Mathlib.Data.Finset.Card
+public import Mathlib.Data.Finset.Basic
+public import Mathlib.Data.Finset.Card
 -- Set
-import Mathlib.Data.Set.Basic
+public import Mathlib.Data.Set.Basic
 -- Multiset
-import Mathlib.Algebra.BigOperators.Group.Multiset.Defs
+public import Mathlib.Algebra.BigOperators.Group.Multiset.Defs
 -- Nat
-import Mathlib.Algebra.Group.Nat.Defs
+public import Mathlib.Algebra.Group.Nat.Defs
 
-import Lean
-import Batteries.Util.ExtendedBinder
+public import Lean
+public import Batteries.Util.ExtendedBinder
+
+public section
+
 
 /-!
 About translating the formulas into lean commands, to insert into the user's

@@ -1,6 +1,12 @@
-import Latex2Lean.Util
-import Latex2Lean.Formula
-import Latex2Lean.CategorizedFormula
+module
+
+public import Latex2Lean.Util
+public import Latex2Lean.Formula
+public import Latex2Lean.CategorizedFormula
+public meta import Latex2Lean.Formula
+
+public section
+
 
 
 namespace Latex2Lean

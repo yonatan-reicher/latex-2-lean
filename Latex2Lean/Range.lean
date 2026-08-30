@@ -1,4 +1,8 @@
-import Latex2Lean.Pos
+module
+
+public import Latex2Lean.Pos
+
+public section
 
 
 namespace Latex2Lean

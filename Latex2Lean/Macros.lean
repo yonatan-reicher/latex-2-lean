@@ -1,4 +1,9 @@
-import Latex2Lean.Functions
+module
+
+public import Latex2Lean.Functions
+
+public section
+
 
 
 /-!

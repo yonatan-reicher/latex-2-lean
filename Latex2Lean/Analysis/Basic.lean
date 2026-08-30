@@ -1,5 +1,10 @@
-import Latex2Lean.Formula
-import Std.Data.HashSet
+module
+
+public import Latex2Lean.Formula
+public import Std.Data.HashSet
+
+public section
+
 
 /-!
 This file defines the analysis monad, which is a reader monad with the
@@ -35,5 +40,4 @@ def Analysis.names := #[
 abbrev AnalysisReaderT (m) [Monad m] := ReaderT Analysis m
 /-- A reader monad with the analysis information -/
 abbrev AnalysisReaderM := AnalysisReaderT Id
-
 

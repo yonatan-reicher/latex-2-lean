@@ -1,5 +1,10 @@
-import Lean
-import Latex2Lean.Node.Basic
+module
+
+public import Lean
+public import Latex2Lean.Node.Basic
+
+public section
+
 
 
 open Lean (TSyntax CoreM Expr)
