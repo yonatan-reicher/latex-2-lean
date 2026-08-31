@@ -1,14 +1,11 @@
 module
 
-public import Latex2Lean
+meta import Latex2Lean
+meta import Mathlib.Data.Set.Basic
 
-public section
-
-
-def N : Set Nat := .univ
+meta def N : Set Nat := .univ
 define_latex r"let $\forall x \in N, 200 = x$"
 example : ∀ x < 10, 200 = x := by
   intro x h
   have : x ∈ N := by trivial
-  exact _root_.h x this
-#guard h = h -- Check that h exists
+  exact axiom_4 x this
