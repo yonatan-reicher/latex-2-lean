@@ -1,3 +1,5 @@
+import analysis.check_egglog
+
 from analysis.ast import Ast, AstId, ast_to_id
 from analysis.input import parse_file
 from analysis.my_egraph import MyEGraph
