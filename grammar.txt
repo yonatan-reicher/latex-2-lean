@@ -14,12 +14,13 @@ error ::= \S+
 
 expr ::= binaryExpr
 binaryExpr ::=
-  | atom ( binOp atom )*
+  | applicationTerm ( binOp applicationTerm )*
+
+applicationExpr ::= atom+
 
 atom ::= 
-  | "\emptySet"
-  | "\varnothing"
-  | number ".."  number
+  | emptySetCommand
+  | range
   | number
   | "\abs" atom
   | "\sum" atom
@@ -28,10 +29,16 @@ atom ::=
   | "\set" "{" setInsides "}"
   | "\mset" "{" setInsides "}"
   | "(" ( expr "," )* expr ")"
+  | quantifiedExpr
   | word // variable name
-  // TODO: add forall?
+
+emptySetCommand ::= "\emptySet" | "\varnothing"
+
+range ::= number ".."  number
 
 setInsides ::=
   | // empty set
   | expr "\mid" ( expr "," )* expr // map
   | ( expr "," )* expr // simple set
+
+quantifiedExpr ::= ("\forall" | "\exists") expr "," expr
