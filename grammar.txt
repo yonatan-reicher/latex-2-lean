@@ -22,8 +22,6 @@ atom ::=
   | emptySetCommand
   | range
   | number
-  | "\abs" atom
-  | "\sum" atom
   | "{" expr "}"
   | "\{" setInsides "\}"
   | "\set" "{" setInsides "}"
