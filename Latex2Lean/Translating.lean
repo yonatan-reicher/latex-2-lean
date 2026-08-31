@@ -54,8 +54,8 @@ private def varToIdent (name : Name) : Ident := mkIdent (.mkSimple name)
 
 private def varToTerm (name : Name) : TermElabM Term := ``($(varToIdent name))
 
-private def varToExpr (name : Name) : TermElabM Expr := do
-  elabTermEnsuringType (← varToTerm name) none
+private def varToExpr (name : Name) (type : Option Expr) : TermElabM Expr := do
+  elabTermEnsuringType (← varToTerm name) type
 
 
 private def empty (t : Option Expr) : M Expr := do
@@ -194,7 +194,7 @@ private partial def binderToForall : Formula.Binder → (rhs : M Expr) → M Exp
 
 private partial def asNumber (f : F) : M Expr :=
   match f.kind with
-  | .var name .. => varToExpr name
+  | .var name .. => varToExpr name none
   | .number n .. => return mkNatLit n
   | .app ⟨"\\abs", _⟩ inner => do
     -- TODO: What if inner is actually a number?
@@ -217,7 +217,7 @@ private partial def asNumber (f : F) : M Expr :=
 private partial def asFinset (f : F) : M Expr :=
   match f.kind with
   | .emptySet .set .. => mkAppM ``Finset.empty #[]
-  | .var name .. => varToExpr name
+  | .var name .. => do varToExpr name (← finsetType)
   | .number n .. => throwError s!"cannot translate number {n} into a finset"
   -- | .binOp (left : Formula) (op : BinOp) (right : Formula)
   | .simpleSet .set elements .. => do
@@ -254,7 +254,7 @@ private partial def asFinset (f : F) : M Expr :=
 private partial def asSet (f : F) : M Expr :=
   match f.kind with
   | .emptySet .set .. => do empty $ some $ ← setType
-  | .var name .. => varToExpr name
+  | .var name .. => do varToExpr name (← setType)
   | .number n .. => throwError s!"cannot translate number {n} into a set"
   | .binOp left op right .. => do
     let leftExpr ← asSet left
@@ -302,7 +302,7 @@ private partial def asSet (f : F) : M Expr :=
 private partial def asMultiset (f : F) : M Expr :=
   match f.kind with
   | .emptySet .multiset .. => do empty $ some $ ← multisetType
-  | .var name .. => varToExpr name
+  | .var name .. => do varToExpr name (← multisetType)
   | .binOp left op right .. => do
     let leftExpr ← asMultiset left
     let rightExpr ← asMultiset right
@@ -357,7 +357,7 @@ private partial def asMultiset (f : F) : M Expr :=
 
 private partial def asTuple (f : F) : M Expr :=
   match f.kind with
-  | .var name .. => varToExpr name
+  | .var name .. => varToExpr name none
   | .tuple elements .. => do
     let elements ← elements.mapM asWhatever
     Prod.fst <$> mkProdMkN elements
@@ -366,13 +366,20 @@ private partial def asTuple (f : F) : M Expr :=
 
 private partial def asProp (f : F) : M Expr :=
   match f.kind with
-  | .var name .. => varToExpr name
+  | .var name .. => varToExpr name (some <| .sort .zero)
   | .binOp .. => asWhatever f
   | .forall_ binders rhs _ => do
     let f ← binders.foldr
       (β := M Expr)
       (init := asProp rhs)
       fun b acc => binderToForall b acc
+    check f
+    return f
+  | .exists_ binders rhs _range => do
+    let f ← binders.foldr
+      (β := M Expr)
+      (init := asProp rhs)
+      fun b acc => binderToExists b acc
     check f
     return f
   | _ => throwError s!"unsupported formula for translation to proposition: {f}"
@@ -382,7 +389,7 @@ private partial def asWhatever (f : F) : M Expr :=
   match f.kind with
   | .emptySet .set .. => asSet f
   | .emptySet .multiset .. => asMultiset f
-  | .var name .. => varToExpr name
+  | .var name .. => varToExpr name none
   | .number .. => asNumber f
   | .app .. =>
     -- How could we know?? Let's try some things??
@@ -401,6 +408,7 @@ private partial def asWhatever (f : F) : M Expr :=
   | .set .multiset .. => asMultiset f
   | .tuple .. => asTuple f
   | .forall_ .. => asProp f
+  | .exists_ .. => asProp f
 
 
 end

@@ -64,7 +64,7 @@ where
       | .multiset => "multiset"
     s!"{kind},{lhs.id},{commaSepIds rhs.toList}"
   | .tuple elements _ => s!"tuple,{commaSepIds elements.toList}"
-  | .forall_ binders rhs _ => s!"forall,{rhs.id},{commaSepIds <| binders.toList.map (·.toFormula)}"
+  | .quantified q binders rhs _ => s!"{q.name},{rhs.id},{commaSepIds <| binders.toList.map (·.toFormula)}"
 
 partial def Formula.Binder.toAnalysisInputLine (b : Binder) : String :=
   b.toFormula.toAnalysisInputLine

@@ -141,14 +141,13 @@ private partial def binaryExpr : T Option Formula := do
     returnNewNode .binOp lhs op rhs
 
 
-private partial def forall_ : T Option Formula := do
+private partial def quantifiedExpr (q : Formula.Quantifier) : T Option Formula := do
   let start ← range
-  -- TODO: Parse multiple binders.
+  -- TODO: get rid of binder all together lol
   let binder ← binder
   popEq (.symbol' ",") <|> throw (start ∪ (←range), "Expected ',' after binder in '\\forall'")
   let rhs ← expr
-  returnNewNode .forall_ #[binder] rhs (start ∪ rhs.range)
-
+  returnNewNode .quantified q #[binder] rhs (start ∪ rhs.range)
 
 private partial def atom : T Option Formula := do
   let t ← pop
@@ -195,9 +194,9 @@ private partial def atom : T Option Formula := do
       popEq (Token.Kind.symbol' "}")
       <|> throw (r, r"A '\set{' was not closed with a '}'")
       returnNewNode inner r
-    | "forall" => forall_
+    | "forall" => quantifiedExpr .forall_
+    | "exists" => quantifiedExpr .exists_
     | _ => throw (t.range, s!"Invalid command '{c}'")
-
   | Token.Kind.symbol' "{" =>
     let some inner ← expr.maybe
       | throw (t.range, "Expected an expression inside '{ }' (Maybe you meant to

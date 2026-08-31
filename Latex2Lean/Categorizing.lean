@@ -16,6 +16,7 @@ def categorize (id : Formula.Id) : Formula → CategorizedFormula
     .definition id name nameRange right varId opId
   | f@(.mk _ <| .binOp _ op _) => if op.predicative then .axiom_ id f else .plain id f
   | f@(.mk _ <| .forall_ ..) => .axiom_ id f
+  | f@(.mk _ <| .exists_ ..) => .axiom_ id f
   | f => .plain id f
 
 

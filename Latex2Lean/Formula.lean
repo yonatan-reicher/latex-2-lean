@@ -108,6 +108,11 @@ def Formula.Id := Nat
 deriving instance DecidableEq, Inhabited, Repr, ToString, Hashable for Formula.Id
 instance {n} : OfNat Formula.Id n := ⟨n⟩
 
+inductive Formula.Quantifier
+  | forall_
+  | exists_
+  deriving DecidableEq, Hashable, Inhabited, Repr
+
 mutual
 
 inductive Formula.Kind where
@@ -123,7 +128,7 @@ inductive Formula.Kind where
   | simpleSet (kind : SetKind) (elements : Array Formula) (range : Range)
   | set (kind : SetKind) (lhs : Formula) (rhs : Array Formula) (range : Range)
   | tuple (elements : Array Formula) (range : Range)
-  | forall_ (binders : Array Formula.Binder) (rhs : Formula) (range : Range)
+  | quantified (q : Formula.Quantifier) (binders : Array Formula.Binder) (rhs : Formula) (range : Range)
   deriving Inhabited, BEq, Repr
 
 /--
@@ -156,12 +161,19 @@ partial def Formula.Kind.WF : Kind → Bool
   | .simpleSet _ elements _ => elements.all WF
   | .set _ lhs rhs _ => lhs.WF ∧ rhs.all WF ∧ ¬rhs.isEmpty
   | .tuple elements _ => elements.size > 1 ∧ elements.all WF
-  | .forall_ binders rhs _ => binders.size > 1 ∧ binders.all Binder.WF ∧ rhs.WF
+  | .quantified _ binders rhs _ => binders.size > 1 ∧ binders.all Binder.WF ∧ rhs.WF
 
 partial def Formula.Binder.WF : Formula.Binder → Bool
   | .in_ (set:=inner) .. => inner.WF
 
 end
+
+@[expose, match_pattern] def Formula.Kind.forall_ := quantified .forall_
+@[expose, match_pattern] def Formula.Kind.exists_ := quantified .exists_
+
+def Formula.Quantifier.name
+  | forall_ => "forall"
+  | exists_ => "exists"
 
 mutual
 
@@ -174,7 +186,7 @@ partial def Formula.Kind.range : Kind → Range
   | .simpleSet _ _ r => r
   | .set (range:=r) .. => r
   | .tuple _ r => r
-  | .forall_ _ _ r => r
+  | .quantified _ _ _ r => r
 
 partial def Formula.range (f : Formula) := f.kind.range
 
@@ -198,12 +210,12 @@ partial def Formula.Kind.toString : Kind → String
     s!"\\\{ {lhs.toString} \\mid {", ".intercalate (rhs.toList.map toString)} \\}"
   | .tuple elements _ =>
     s!"({", ".intercalate (elements.toList.map Formula.toString)})"
-  | .forall_ #[binder] rhs _ =>
-    s!"\\forall {binder.toString}, {rhs.toString}"
-  | .forall_ binders rhs _ =>
+  | .quantified q #[binder] rhs _ =>
+    s!"\\{q.name} {binder.toString}, {rhs.toString}"
+  | .quantified q binders rhs _ =>
     binders.toList.map (s!"({·.toString})")
     |> " ".intercalate
-    |> (s!"\\forall {·}, {rhs.toString}")
+    |> (s!"\\{q.name} {·}, {rhs.toString}")
 
 partial def Formula.Binder.toString : Formula.Binder → String
   | .in_ _ _ name _ set => s!"{show String from name} \\in {set.toString}"
@@ -236,7 +248,7 @@ def Formula.Kind.children : Kind → Array Formula × Array Binder
   | .simpleSet _ elements .. => (elements, #[])
   | .set _ lhs rhs .. => (#[lhs] ++ rhs, #[])
   | .tuple elements .. => (elements, #[])
-  | .forall_ binders rhs .. => (#[rhs], binders)
+  | .quantified _ binders rhs .. => (#[rhs], binders)
 
 def Formula.Binder.toFormula : Binder → Formula
   | .in_ varId rootId name nameRange set =>
