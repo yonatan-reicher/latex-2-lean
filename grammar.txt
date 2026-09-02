@@ -16,7 +16,7 @@ expr ::= binaryExpr
 binaryExpr ::=
   | applicationTerm ( binOp applicationTerm )*
 
-applicationExpr ::= atom+
+applicationExpr ::= ident atom+ | atom
 
 atom ::= 
   | emptySetCommand
