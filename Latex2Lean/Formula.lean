@@ -123,7 +123,7 @@ inductive Formula.Kind where
   | number (n : Nat) (range : Range)
   /-- func - name of the function, may have a '\' at the start if it's some
     command like \abs or \sum. -/
-  | app (func : Formula.Ident) (arg : Formula)
+  | app (func : Formula.Ident) (args : Array Formula)
   | binOp (left : Formula) (op : BinOp) (right : Formula)
   | simpleSet (kind : SetKind) (elements : Array Formula) (range : Range)
   | set (kind : SetKind) (lhs : Formula) (rhs : Array Formula) (range : Range)
@@ -156,7 +156,7 @@ partial def Formula.Kind.WF : Kind → Bool
   | .var _ _
   | .number _ _
      => true
-  | .app _ inner => inner.WF
+  | .app _func args => 0 < args.size ∧ args.all WF
   | .binOp l _ r => l.WF ∧ r.WF
   | .simpleSet _ elements _ => elements.all WF
   | .set _ lhs rhs _ => lhs.WF ∧ rhs.all WF ∧ ¬rhs.isEmpty
@@ -181,7 +181,7 @@ partial def Formula.Kind.range : Kind → Range
   | .emptySet _ r => r
   | .var _ r => r
   | .number _ r => r
-  | .app func arg => func.range ∪ arg.range
+  | .app func args => func.range ∪ args[args.size - 1]!.range
   | .binOp l _ r => l.range ∪ r.range
   | .simpleSet _ _ r => r
   | .set (range:=r) .. => r
@@ -200,7 +200,7 @@ partial def Formula.Kind.toString : Kind → String
   | .emptySet _ _ => "\\emptyset"
   | .var name _ => s!"{show String from name}"
   | .number n _ => s!"{n}"
-  | .app func arg => s!"{show String from func.name} {arg.toString}"
+  | .app func args => s!"({show String from func.name} {" ".intercalate <| args.toList.map (·.toString)})"
   | .binOp left op right =>
     s!"{left.toString} {op} {right.toString}"
   | .simpleSet _ elements _ =>
@@ -243,7 +243,7 @@ def Formula.Kind.children : Kind → Array Formula × Array Binder
   | .var ..
   | .number ..
     => (#[], #[])
-  | .app _func arg => (#[arg], #[])
+  | .app _func args => (args, #[])
   | .binOp left _op right => (#[left, right], #[])
   | .simpleSet _ elements .. => (elements, #[])
   | .set _ lhs rhs .. => (#[lhs] ++ rhs, #[])

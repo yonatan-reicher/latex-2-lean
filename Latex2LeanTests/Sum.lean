@@ -13,7 +13,7 @@ example : x = 30 := by decide
 meta def s : Multiset Nat := {1, 2, 1}
 meta def s' := s.pmap (p := fun _ => True) (fun x h => x + 1) (by trivial)
 meta def y := s'.sum
-#reduce s'
+#guard s' = {2, 3, 2}
 #print s'
-#reduce y
+#guard y = 7
 #print y

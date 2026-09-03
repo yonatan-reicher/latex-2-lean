@@ -16,7 +16,13 @@ expr ::= binaryExpr
 binaryExpr ::=
   | applicationTerm ( binOp applicationTerm )*
 
-applicationExpr ::= ident atom+ | atom
+applicationExpr ::= functionName atom+ | atom
+
+functionName ::=
+  | "\abs"
+  | "\max"
+  | "\sum"
+  | word
 
 atom ::= 
   | emptySetCommand

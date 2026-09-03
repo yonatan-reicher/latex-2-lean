@@ -197,10 +197,14 @@ private partial def asNumber (f : F) : M Expr :=
   | .var name .. => varToExpr name none
   | .number n .. => return mkNatLit n
   | .app ⟨"\\abs", _⟩ inner => do
+    let #[inner] := inner
+      | throwError m!"function '\\abs' had too many arguments!"
     -- TODO: What if inner is actually a number?
     let innerExpr ← asFinset inner
     mkAppM ``Finset.card #[innerExpr]
   | .app ⟨"\\sum", _⟩ inner => do
+    let #[inner] := inner
+      | throwError m!"function '\\sum had too many arguments!"
     -- For now, assume the result is a multiset.
     mkAppM ``Multiset.sum #[← asMultiset inner]
   | .binOp left op right .. => do

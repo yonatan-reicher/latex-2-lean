@@ -14,6 +14,20 @@ def m : Multisegment := [(1, 2), (2, 3), (4, 6)]
 def Indices (m : Multisegment) : Set (List Nat) :=
   { i : List Nat | ¬i.isEmpty ∧ ∀ x ∈ i, x < m.length }
 
+def L : Set Nat := .univ
+
+
+define_latex verbose r"
+  $$
+    M = \max \set{
+      j \mid \exists I ∈ L,
+        Indices(I, m)
+        ∧ (m[i[0]] = s)
+        ∧ ∀ r < j, segmentLt m[i[r]] m[i[r + 1]]
+    }
+  $$
+"
+
 
 define_latex verbose r"
   $$

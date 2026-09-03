@@ -67,12 +67,21 @@ def pop : T Option Token :=
     let t ← tokens[0]?
     return .ok ((t, tokens[1:]), nextId)
 
+def popChoose {α} (f : Token → Option α) : T Option α := do
+  let t ← peek
+  if let some ret := f t then
+    ignore <$> pop
+    return ret
+  else
+    failure 
+
 def popEq (kind : Token.Kind) : T Option Unit := do
   let t ← peek
   if t.kind = kind
   then ignore <$> pop
   else failure
 
+/-- Returns a new node id (not a variable identifier). -/
 def popId [MonadStateOf NextId m] : m FId :=
   modifyGetThe NextId fun nextId => (nextId, Nat.add nextId 1)
 
@@ -131,7 +140,7 @@ private partial def expr : M Formula :=
 
 
 private partial def binaryExpr : T Option Formula := do
-  let lhs ← atom
+  let lhs ← applicationExpr
   let opRange ← range
   match ← binaryOperator.maybe with
   | none => return lhs
@@ -140,6 +149,28 @@ private partial def binaryExpr : T Option Formula := do
       | throw (opRange, "Expected an expression after a binary operator")
     returnNewNode .binOp lhs op rhs
 
+private partial def functionName (t : Token) : Option Formula.Ident :=
+  (matchKind t.kind).map (⟨·, t.range⟩)
+where
+  matchKind : Token.Kind → Option (Array Char)
+    | .word w => some w
+    | .command c => guard (c ∈ commandFunctionNames) *> some (#['\\'] ++ c)
+    | _ => none
+  commandFunctionNames : Array (Array Char) := #[
+    "abs",
+    "max",
+    "sum",
+  ]
+
+private partial def applicationExpr : T Option Formula :=
+  applicationCase <|> atom
+where
+  applicationCase := do
+    let func ← popChoose functionName
+    let mut args := #[← atom] -- Start with an argument, fails if cannot parse it.
+    while let some e ← atom.maybe do
+      args := args.push e
+    returnNewNode .app func args
 
 private partial def quantifiedExpr (q : Formula.Quantifier) : T Option Formula := do
   let start ← range
@@ -166,14 +197,6 @@ private partial def atom : T Option Formula := do
     match (c : String) with
     | "emptyset"
     | "varnothing" => returnNewNode .emptySet .set t.range
-    | "abs"
-    | "sum" =>
-      let some inner ← atom.maybe
-        | throw (t.range, r"Expected an expression atom after '\abs'")
-      match (c : String) with
-      | "abs" => returnNewNode .app ⟨"\\abs", t.range⟩ inner
-      | "sum" => returnNewNode .app ⟨"\\sum", t.range⟩ inner
-      | _ => throw (t.range, "Invalid function name")
     | "{" =>
       let inner ← setInsides .set
       let r := t.range ∪ (←range)
@@ -196,7 +219,8 @@ private partial def atom : T Option Formula := do
       returnNewNode inner r
     | "forall" => quantifiedExpr .forall_
     | "exists" => quantifiedExpr .exists_
-    | _ => throw (t.range, s!"Invalid command '{c}'")
+    -- | _ => throw (t.range, s!"Invalid command '{c}'")
+    | _ => failure
   | Token.Kind.symbol' "{" =>
     let some inner ← expr.maybe
       | throw (t.range, "Expected an expression inside '{ }' (Maybe you meant to
@@ -215,7 +239,8 @@ private partial def atom : T Option Formula := do
     | _ => returnNewNode .tuple inner r
   | Token.Kind.word name => returnNewNode .var name t.range
   -- TODO: Maybe we want to just return none?
-  | Token.Kind.symbol s => throw (t.range, s!"Invalid symbol '{s}'")
+  -- | Token.Kind.symbol s => throw (t.range, s!"Invalid symbol '{s}'")
+  | Token.Kind.symbol s => failure
   | Token.Kind.error s => throw (t.range, s!"Lexing error: {s}")
 
 
