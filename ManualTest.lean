@@ -21,7 +21,7 @@ define_latex verbose r"
   $$
     M = \max \set{
       j \mid \exists I ∈ L,
-        Indices(I, m)
+        Indices I m
         ∧ (m[i[0]] = s)
         ∧ ∀ r < j, segmentLt m[i[r]] m[i[r + 1]]
     }
