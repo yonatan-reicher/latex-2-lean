@@ -20,10 +20,10 @@ def L : Set Nat := .univ
 define_latex verbose r"
   $$
     M = \max \set{
-      j \mid \exists I ∈ L,
+      j \mid \exists I \in L,
         Indices I m
-        ∧ (m[i[0]] = s)
-        ∧ ∀ r < j, segmentLt m[i[r]] m[i[r + 1]]
+        \and (m[i[0]] = s)
+        \and (\forall r < j, segmentLt m[i[r]] m[i[r + 1]]
     }
   $$
 "
