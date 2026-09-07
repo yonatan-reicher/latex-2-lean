@@ -11,34 +11,36 @@ define_latex file verbose "proof-adjusted.md"
 abbrev Segment := Nat × Nat
 abbrev Multisegment := List Segment
 def m : Multisegment := [(1, 2), (2, 3), (4, 6)]
-def Indices (m : Multisegment) : Set (List Nat) :=
+def Indices (m : Multisegment) : Set (List Nat) := -- Finset please?
   { i : List Nat | ¬i.isEmpty ∧ ∀ x ∈ i, x < m.length }
 
-def L : Set Nat := .univ
+def L : Set (List Nat) := .univ
+
+def get (l : List Nat) (n : Nat) := l[n]!
+def msGet (m : Multisegment) (n : Nat) := m[n]!
 
 
 define_latex verbose r"
   $$
     M = \max \set{
-      j \mid \exists I \in L,
-        Indices I m
-        \and (m[i[0]] = s)
-        \and (\forall r < j, segmentLt m[i[r]] m[i[r + 1]]
+      j \mid I \in Indices m,
+        (msGet m (get I 0) = s)
+        \land (\forall r < j, segmentLt (msGet m (get i r)) (msGet m (i (r + 1))))
     }
   $$
 "
 
 
-define_latex verbose r"
-  $$
-    M = max \set{
-      j \mid \exists I ∈ Indices m,
-        (m[i[0]] = s)
-        ∧ ∀ r < j, segmentLt m[i[r]] m[i[r + 1]]
-    }
-  $$
-"
-
+-- define_latex verbose r"
+--   $$
+--     M = max \set{
+--       j \mid \exists I ∈ Indices m,
+--         (m[i[0]] = s)
+--         ∧ ∀ r < j, segmentLt m[i[r]] m[i[r + 1]]
+--     }
+--   $$
+-- "
+--
 
 /-
 
@@ -64,13 +66,13 @@ max {
 -/
 
 
-define_latex verbose r"
-
-Let $x = \sum \mset{ 1 }$
-
-
-"
-example : x = 1 := by decide
-
-
-define_latex file verbose "ladder.md"
+-- define_latex verbose r"
+--
+-- Let $x = \sum \mset{ 1 }$
+--
+--
+-- "
+-- example : x = 1 := by decide
+--
+--
+-- define_latex file verbose "ladder.md"

@@ -175,7 +175,7 @@ where
 private partial def quantifiedExpr (q : Formula.Quantifier) : T Option Formula := do
   let start ← range
   -- TODO: get rid of binder all together lol
-  let binder ← binder
+  let binder ← expr
   popEq (.symbol' ",") <|> throw (start ∪ (←range), "Expected ',' after binder in '\\forall'")
   let rhs ← expr
   returnNewNode .quantified q #[binder] rhs (start ∪ rhs.range)

@@ -378,18 +378,16 @@ private partial def asProp (f : F) : M Expr :=
   match f.kind with
   | .var name .. => varToExpr name (some <| .sort .zero)
   | .binOp .. => asWhatever f
-  | .forall_ binders rhs _ => do
-    let f ← binders.foldr
-      (β := M Expr)
-      (init := asProp rhs)
-      fun b acc => binderToForall b acc
-    check f
-    return f
-  | .exists_ binders rhs _range => do
-    let f ← binders.foldr
-      (β := M Expr)
-      (init := asProp rhs)
-      fun b acc => binderToExists b acc
+  | .quantified q binders rhs _ => do
+    -- Check
+    if binders.any (·.asBinder.isNone) then
+      throwError m!"cannot have non-binder on left-hand side of a '\\{q.name}'"
+    -- Fold over the binders
+    let quantifierBuilder := match q with
+      | .forall_ => binderToForall
+      | .exists_ => binderToExists
+    let binders := binders.filterMap (·.asBinder)
+    let f ← binders.foldr (β := M Expr) (init := asProp rhs) quantifierBuilder
     check f
     return f
   | _ => throwError s!"unsupported formula for translation to proposition: {f}"

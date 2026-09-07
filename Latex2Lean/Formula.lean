@@ -152,7 +152,7 @@ inductive Formula.Kind where
   | simpleSet (kind : SetKind) (elements : Array Formula) (range : Range)
   | set (kind : SetKind) (lhs : Formula) (rhs : Array Formula) (range : Range)
   | tuple (elements : Array Formula) (range : Range)
-  | quantified (q : Formula.Quantifier) (binders : Array Formula.Binder) (rhs : Formula) (range : Range)
+  | quantified (q : Formula.Quantifier) (binders : Array Formula) (rhs : Formula) (range : Range)
   deriving Inhabited, BEq, Repr
 
 /--
@@ -185,7 +185,7 @@ partial def Formula.Kind.WF : Kind → Bool
   | .simpleSet _ elements _ => elements.all WF
   | .set _ lhs rhs _ => lhs.WF ∧ rhs.all WF ∧ ¬rhs.isEmpty
   | .tuple elements _ => elements.size > 1 ∧ elements.all WF
-  | .quantified _ binders rhs _ => binders.size > 1 ∧ binders.all Binder.WF ∧ rhs.WF
+  | .quantified _ binders rhs _ => binders.size > 1 ∧ binders.all WF ∧ rhs.WF
 
 partial def Formula.Binder.WF : Formula.Binder → Bool
   | .in_ (set:=inner) .. => inner.WF
@@ -272,7 +272,7 @@ def Formula.Kind.children : Kind → Array Formula × Array Binder
   | .simpleSet _ elements .. => (elements, #[])
   | .set _ lhs rhs .. => (#[lhs] ++ rhs, #[])
   | .tuple elements .. => (elements, #[])
-  | .quantified _ binders rhs .. => (#[rhs], binders)
+  | .quantified _ binders rhs .. => (#[rhs] ++ binders, #[])
 
 def Formula.Binder.toFormula : Binder → Formula
   | .in_ varId rootId name nameRange set =>
