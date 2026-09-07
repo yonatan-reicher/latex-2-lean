@@ -12,6 +12,7 @@ not seem feasible)
 ## Next Steps
 
 Update the scoping rules.
+Deal with the latest git stash.
 Set comprehension - parse input and update rules.
 Remove souffle code.
 
