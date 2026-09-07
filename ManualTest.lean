@@ -24,8 +24,8 @@ define_latex verbose r"
   $$
     M = \max \set{
       j \mid I \in Indices m,
-        (msGet m (get I 0) = s)
-        \land (\forall r < j, segmentLt (msGet m (get i r)) (msGet m (i (r + 1))))
+        (msGet m (get I 0) = s),
+        (\forall r < j, segmentLt (msGet m (get i r)) (msGet m (i (r + 1))))
     }
   $$
 "
