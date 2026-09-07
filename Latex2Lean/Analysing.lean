@@ -37,6 +37,12 @@ private def BinOp.toNodeName : BinOp → String
   | .supseteq => "supseteq"
   | .supset => "supset"
   | .times => "times"
+  | .land => "land"
+  | .lor => "lor"
+  | .lt => "lt"
+  | .le => "le"
+  | .gt => "gt"
+  | .ge => "ge"
 
 
 abbrev commaSep {α} [ToString α] (l : List α) : String := ",".intercalate <| l.map toString

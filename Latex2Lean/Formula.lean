@@ -17,68 +17,92 @@ inductive BinOp where
   | minus
   | star
   | slash
+  | lt
+  | le
+  | gt
+  | ge
   -- other symbols
   | eq
   -- words
   | cap
   | cup
   | in_
-  | times
-  | subseteq
+  | land
+  | lor
   | subset
-  | supseteq
+  | subseteq
   | supset
+  | supseteq
+  | times
   deriving DecidableEq, Inhabited, Repr
 
 
 def BinOp.toString : BinOp → String
-  | plus => "+"
-  | minus => "-"
-  | star => "*"
-  | slash => "/"
-  | eq => "="
   | cap => r"\cap"
+  | land => r"\land"
+  | lor => r"\lor"
   | cup => r"\cup"
+  | eq => "="
   | in_ => r"\in"
-  | times => r"\times"
-  | subseteq => r"\subseteq"
+  | minus => "-"
+  | plus => "+"
+  | slash => "/"
+  | star => "*"
   | subset => r"\subset"
-  | supseteq => r"\supseteq"
+  | subseteq => r"\subseteq"
   | supset => r"\supset"
+  | supseteq => r"\supseteq"
+  | times => r"\times"
+  | lt => "<"
+  | le => r"\le"
+  | gt => ">"
+  | ge => r"\ge"
 
 
 /-- An operator that returns a true/false value -/
 def BinOp.predicative : BinOp → Bool
   | .eq
+  | .ge
+  | .gt
   | .in_
-  | .subseteq
+  | .land
+  | .le
+  | .lor
+  | .lt
   | .subset
-  | .supseteq
+  | .subseteq
   | .supset
+  | .supseteq
     => true
-  | .plus
-  | .minus
-  | .star
-  | .slash
   | .cap
   | .cup
+  | .minus
+  | .plus
+  | .slash
+  | .star
   | .times
     => false
 
 def BinOp.all : Array BinOp :=
   #[
-    .eq,
-    .in_,
-    .subseteq,
-    .subset,
-    .supseteq,
-    .supset,
-    .plus,
-    .minus,
-    .star,
-    .slash,
     .cap,
     .cup,
+    .eq,
+    .ge,
+    .gt,
+    .in_,
+    .land,
+    .le,
+    .lor,
+    .lt,
+    .minus,
+    .plus,
+    .slash,
+    .star,
+    .subset,
+    .subseteq,
+    .supset,
+    .supseteq,
     .times,
   ]
 

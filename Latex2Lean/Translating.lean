@@ -144,6 +144,12 @@ where toStx : BinOp → Term → Term → M Term
   | .subset, a, b => ``($a ⊂ $b)
   | .subseteq, a, b => ``($a ⊆ $b)
   | .times, a, b => ``($a × $b)
+  | .land, a, b => ``($a ∧ $b)
+  | .lor, a, b => ``($a ∨ $b)
+  | .lt, a, b => ``($a < $b)
+  | .le, a, b => ``($a ≤ $b)
+  | .gt, a, b => ``($a > $b)
+  | .ge, a, b => ``($a ≥ $b)
 
 
 def Formula.asBinder (f : Formula) : Option Formula.Binder :=
