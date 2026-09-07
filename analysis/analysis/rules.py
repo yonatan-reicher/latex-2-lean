@@ -34,6 +34,11 @@ def parent_of(root: Ast, a: Ast, b: Ast, elements: Vec[AstId]):
         # Set
         rule(eq(root.kind()).to(AstKind.set(elements)), elements.contains(a.id())) \
             .then(root.parent_of(a)),
+        # Set Comprehension
+        rule(eq(root.kind()).to(AstKind.setComp(a.id(), elements))) \
+            .then(root.parent_of(a)),
+        rule(eq(root.kind()).to(AstKind.setComp(b.id(), elements)), elements.contains(a.id())) \
+            .then(root.parent_of(a)),
         # Definition
         rule(eq(root.kind()).to(AstKind.definition(a.id()))).then(root.parent_of(a)),
         # Axiom
