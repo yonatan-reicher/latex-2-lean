@@ -9,6 +9,12 @@ regular Lean definitions. Specifically, the goal is to add the definitions,
 letting you explore them formally inside of Lean (translating whole proofs does
 not seem feasible)
 
+## Next Steps
+
+Update the scoping rules.
+Set comprehension - parse input and update rules.
+Remove souffle code.
+
 ## On Adding Custom Notation
 
 Thinking about how to add custom notation. We said that we should start by just
@@ -24,14 +30,7 @@ $a \in^2 b: \exists c, a \in c \and c \in b$. Even simpler, because we don't
 support \and's and \exists', we could just define it as
 :a \in^2 b: a \in \set{ a \mid c \in b }
 
-## Currently Working On
-
-* refactoring static analysis to use egglog instead of souffle
-  (branch egglog-analysis)
-* rewriting the grammar, than we also need to update the parser (branch
-  grammar-update)
-
-## TODO
+## Maybe One Day
 
 In axioms, introduce variables if they don't exist
 Make things types instead
