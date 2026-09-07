@@ -66,8 +66,8 @@ where
   | .simpleSet .multiset elements _ => s!"multiset,{commaSepIds elements.toList}"
   | .set k lhs rhs _ =>
     let kind := match k with
-      | .set => "set"
-      | .multiset => "multiset"
+      | .set => "set-comp"
+      | .multiset => "multiset-comp"
     s!"{kind},{lhs.id},{commaSepIds rhs.toList}"
   | .tuple elements _ => s!"tuple,{commaSepIds elements.toList}"
   | .quantified q binders rhs _ => s!"{q.name},{rhs.id},{commaSepIds <| binders.toList}"
