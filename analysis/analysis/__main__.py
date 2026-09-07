@@ -56,7 +56,12 @@ asts = parse_file(args.input_file)
 
 egraph = MyEGraph()
 for a in asts.values(): egraph.register(a)
-for r in all_rules: egraph.register(r)
+for r in all_rules:
+    try:
+        egraph.register(r)
+    except Exception as e:
+        e.add_note(f"when registering rule '{r.__name__}'")
+        raise
 egraph.run(run().saturate())
 # egraph.display()
 
