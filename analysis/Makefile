@@ -20,4 +20,4 @@ run:
 		echo "variable OUTPUTS was not set!"; \
 		exit 1; \
 	fi
-	python3 -m analysis $(INPUT) $(OUTPUTS)
+	python3 -m analysis $(FLAGS) $(INPUT) $(OUTPUTS)

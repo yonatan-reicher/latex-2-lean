@@ -42,6 +42,12 @@ class BinOp(Expr):
     f"{bin_op.name.upper()} = BinOp.mk_{bin_op.name}()"
     for bin_op in BIN_OP_TABLE
 )}
+
+def try_parse_bin_op(s: str) -> BinOp | None:
+    match s:
+{'\n'.join(f"        case '{bin_op.name}': return {bin_op.name.upper()}"
+         for bin_op in BIN_OP_TABLE)}
+        case _: return None
 """.strip()
     # {'\n    '.join(
     #     f"def {bin_op.name}(cls) -> BinOp: ..." for bin_op in BIN_OP_TABLE

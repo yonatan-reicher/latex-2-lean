@@ -47,11 +47,27 @@ def parse_file(file: Path) -> dict[int, Ast]:
                     f"'{args}' were given."
                 )
             return split_args[0], split_args[1]
+        def check_three_args() -> tuple[str, str, str]:
+            if args is None:
+                raise KindParseError(
+                    f"The '{kind_str}' kind must have two arguments, but none were "
+                    f"given."
+                )
+            split_args = args.split(',', 2)
+            if len(split_args) != 3:
+                raise KindParseError(
+                    f"The '{kind_str}' kind must have three arguments, but only "
+                    f"'{args}' were given."
+                )
+            return split_args[0], split_args[1], split_args[2]
         def check_one_id_arg() -> AstId:
             return ast_id(check_one_arg())
         def check_two_id_args() -> tuple[AstId, AstId]:
             arg1_str, arg2_str = check_two_args()
             return ast_id(arg1_str), ast_id(arg2_str)
+        def check_one_arg_two_id_args() -> tuple[str, AstId, AstId]:
+            arg1, arg2_str, arg3_str = check_three_args()
+            return arg1, ast_id(arg2_str), ast_id(arg3_str) 
         def check_many_id_args() -> tuple[AstId, ...]:
             return tuple(
                 ast_id(a)
@@ -65,16 +81,20 @@ def parse_file(file: Path) -> dict[int, Ast]:
             return AstKind.var(check_one_arg())
         elif kind_str == "num":
             return AstKind.num(int(check_one_arg()))
-        elif kind_str == "add":
-            return AstKind.bin_op(PLUS, *check_two_id_args())
-        elif kind_str == "sub":
-            return AstKind.bin_op(MINUS, *check_two_id_args())
+        elif kind_str == "op":
+            bin_op_str, id1, id2 = check_one_arg_two_id_args()
+            bin_op = try_parse_bin_op(bin_op_str)
+            if bin_op is None:
+                raise KindParseError(
+                    f"there is not binary operator named '{bin_op_str}'")
+            return AstKind.bin_op(bin_op, id1, id2)
         elif kind_str == "set":
             return AstKind.set(Vec[AstId](*check_many_id_args()))
+        elif kind_str == "set-comp":
+            lhs, *rest = check_many_id_args()
+            return AstKind.setComp(lhs, Vec[AstId](*rest))
         elif kind_str == "definition":
             return AstKind.definition(check_one_id_arg())
-        elif kind_str == "eq":
-            return AstKind.bin_op(EQ, *check_two_id_args())
         else:
             return AstKind.error(f"Unknown kind '{kind_str}'")
 

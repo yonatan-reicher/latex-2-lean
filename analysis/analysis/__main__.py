@@ -13,11 +13,9 @@ from sys import argv
 
 analyses = frozenset({"is_finite", "used_as_finite"})
 
-USAGE_MSG_TEMPLATE = """
-Usage: python -m analysis <input_file> MAGIC
+USAGE_MSG = f"""
+Usage: python -m analysis [--display] <input_file> {' '.join(f"{a}=<path>" for a in analyses)}
 """.strip()
-USAGE_MSG = USAGE_MSG_TEMPLATE \
-    .replace('MAGIC', ' '.join(f"{a}=<path>" for a in analyses))
 
 @dataclass(frozen=True, slots=True)
 class OutputFiles:
@@ -26,22 +24,29 @@ class OutputFiles:
 
 @dataclass(frozen=True, slots=True)
 class CliArguments:
+    display: bool
     input_file: Path
     output_files: OutputFiles
     @staticmethod
     def parse() -> CliArguments:
         """ Constructs the object from `sys.argv` """
+        args = argv[1:]
+        display = False
+        if '--display' in args:
+            args = [ a for a in args if a != '--display' ]
+            display = True
         n_expected_args = 1 + len(analyses)
-        if len(argv) != 1 + n_expected_args: bad_exit(USAGE_MSG)
+        if len(args) != n_expected_args: bad_exit(USAGE_MSG)
         parsed = {}
-        for arg in argv[2:]:
+        for arg in args[1:]:
             splot = arg.split('=', maxsplit=1)
             if len(splot) != 2: bad_exit(USAGE_MSG)
             name, path = splot
             parsed[name] = Path(path)
         if frozenset(parsed.keys()) != analyses: bad_exit(USAGE_MSG)
         return CliArguments(
-            input_file=Path(argv[1]),
+            display=display,
+            input_file=Path(args[0]),
             output_files=OutputFiles(
                 is_finite=parsed['is_finite'],
                 used_as_finite=parsed['used_as_finite'],
@@ -64,7 +69,7 @@ for r in all_rules:
         e.add_note(f"when registering rule '{r.__name__}'")
         raise
 egraph.run(run().saturate())
-# egraph.display()
+if args.display: egraph.display()
 
 is_finite = [ int(ast_to_id(ast))
               for ast, in egraph.relation_elements(Ast.is_finite) ]

@@ -18,3 +18,11 @@ PLUS = BinOp.mk_plus()
 MINUS = BinOp.mk_minus()
 EQ = BinOp.mk_eq()
 IN = BinOp.mk_in()
+
+def try_parse_bin_op(s: str) -> BinOp | None:
+    match s:
+        case 'plus': return PLUS
+        case 'minus': return MINUS
+        case 'eq': return EQ
+        case 'in': return IN
+        case _: return None

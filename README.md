@@ -11,6 +11,7 @@ not seem feasible)
 
 ## Next Steps
 
+Fix analysis ast kind
 Update the scoping rules.
 Deal with the latest git stash.
 Set comprehension - parse input and update rules.
