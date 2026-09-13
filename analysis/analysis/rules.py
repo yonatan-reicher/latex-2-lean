@@ -1,5 +1,6 @@
 from analysis.ast import Ast, AstId, AstKind, ast_rules, N_AST_KINDS
 from analysis.bin_op import *
+from analysis.vec_get import vec_get, request_vec_get, rules as vec_get_rules
 from egglog import *
 
 def is_set_of_is_finite_set(ast: Ast):
@@ -59,6 +60,11 @@ def scope(
     bound_id: AstId,
     binders: Vec[AstId],
     binder_id: AstId,
+    binder1_id: AstId,
+    binder2_id: AstId,
+    binder1_index: AstId,
+    binder2_index: AstId,
+    binder2: Ast,
 ):
     return [
         # All scopes are, at least, empty
@@ -66,7 +72,7 @@ def scope(
         # Child scope
         rule(a.parent_of(b), eq(s).to(a.scope())).then(set_(b.scope()).to(s)),
         # Set comprehension
-        rule(
+        rule( # lhs
             AstKind.setComp(lhs.id(), binders),
             binders.contains(Ast(
                 binder_id,
@@ -79,25 +85,31 @@ def scope(
         ).then(
             set_(lhs.scope()).to(set([var_name])),
         ),
-        rule(
+        rule( # right
             AstKind.setComp(lhs.id(), binders),
-            binders.contains(Ast(
-                binder_id,
+            eq(binder1_id).to(vec_get(binders, binder1_index)),
+            eq(binder2_id).to(vec_get(binders, binder2_index)),
+            binder1_index < binder2_index,
+            Ast(
+                binder1_id,
                 AstKind.bin_op(
                     IN,
                     Ast(var_id, AstKind.var(var_name)).id(),
                     bound_id,
                 ),
-            ).id()),
+            ),
+            eq(binder2_id).to(binder2.id()),
         ).then(
-            set_(lhs.scope()).to(set([var_name])),
+            set_(binder2.scope()).to(set([var_name])),
         ),
+        rule(AstKind.setComp(lhs.id(), binders)).then(request_vec_get(binders)),
     ]
 
 # ------ All -------------------------------------------------------------------
 
 all = [
     *ast_rules,
+    *vec_get_rules,
     is_set_of_is_finite_set,
     is_finite,
     parent_of,
