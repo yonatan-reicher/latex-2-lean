@@ -7,6 +7,7 @@ e-graph when using.
 
 from egglog import *
 from typing import Callable, Concatenate
+from analysis.bin_op import BinOp, EQ
 
 # Disabling a false-negative type-checking error.
 # mypy: disable-error-code="empty-body"
@@ -29,14 +30,12 @@ class AstKind(Expr):
     An algebraic data-type that holds the type of an AST node, and it's
     arguments.
     """
+    # TODO: Fix op
+    # TODO: Make names match the lean AST
     @_ast_kind_ctor
     def var(cls, name: StringLike) -> AstKind: ...
     @_ast_kind_ctor
     def num(cls, n: i64Like) -> AstKind: ...
-    @_ast_kind_ctor
-    def add(cls, this: AstIdLike, other: AstIdLike) -> AstKind: ...
-    @_ast_kind_ctor
-    def sub(cls, this: AstIdLike, other: AstIdLike) -> AstKind: ...
     @_ast_kind_ctor
     def set(cls, elements: Vec[AstId]) -> AstKind: ...
     @_ast_kind_ctor
@@ -48,7 +47,7 @@ class AstKind(Expr):
     @_ast_kind_ctor
     def error(cls, msg: StringLike) -> AstKind: ...
     @_ast_kind_ctor
-    def eq(cls, lhs: AstIdLike, rhs: AstIdLike) -> AstKind: ...
+    def bin_op(cls, op: BinOp, lhs: AstIdLike, rhs: AstIdLike) -> AstKind: ...
 
 class Ast(Expr):
     """ An AST node that holds an id and some data. """

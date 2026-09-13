@@ -1,5 +1,6 @@
 from pathlib import Path
 from analysis.ast import Ast, AstKind, AstId
+from analysis.bin_op import *
 from analysis.utils import bad_exit
 from egglog import Vec
 
@@ -65,15 +66,15 @@ def parse_file(file: Path) -> dict[int, Ast]:
         elif kind_str == "num":
             return AstKind.num(int(check_one_arg()))
         elif kind_str == "add":
-            return AstKind.add(*check_two_id_args())
+            return AstKind.bin_op(PLUS, *check_two_id_args())
         elif kind_str == "sub":
-            return AstKind.sub(*check_two_id_args())
+            return AstKind.bin_op(MINUS, *check_two_id_args())
         elif kind_str == "set":
             return AstKind.set(Vec[AstId](*check_many_id_args()))
         elif kind_str == "definition":
             return AstKind.definition(check_one_id_arg())
         elif kind_str == "eq":
-            return AstKind.eq(*check_two_id_args())
+            return AstKind.bin_op(EQ, *check_two_id_args())
         else:
             return AstKind.error(f"Unknown kind '{kind_str}'")
 

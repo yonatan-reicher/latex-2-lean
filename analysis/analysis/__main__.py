@@ -1,4 +1,5 @@
 import analysis.check_egglog
+import analysis.generate_bin_op
 
 from analysis.ast import Ast, AstId, ast_to_id
 from analysis.input import parse_file

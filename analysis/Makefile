@@ -1,3 +1,13 @@
+.PHONY: check test run default
+
+default: check test
+
+check:
+	@if type zuban > /dev/null; then \
+		echo zuban check; \
+		zuban check; \
+	fi
+
 test:
 	pytest
 
