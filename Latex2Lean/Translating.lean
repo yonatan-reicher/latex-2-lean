@@ -8,6 +8,7 @@ public import Latex2Lean.LeanCmd
 -- Finset
 public import Mathlib.Data.Finset.Basic
 public import Mathlib.Data.Finset.Card
+public import Mathlib.Data.Finset.Max
 -- Set
 public import Mathlib.Data.Set.Basic
 -- Multiset
@@ -210,9 +211,14 @@ private partial def asNumber (f : F) : M Expr :=
     mkAppM ``Finset.card #[innerExpr]
   | .app ⟨"\\sum", _⟩ inner => do
     let #[inner] := inner
-      | throwError m!"function '\\sum had too many arguments!"
+      | throwError m!"function '\\sum' had too many arguments!"
     -- For now, assume the result is a multiset.
     mkAppM ``Multiset.sum #[← asMultiset inner]
+  | .app ⟨r"\max", _⟩ args => do
+    let #[arg] := args
+      | throwError m!"'\\max' needs exactly one argument, but got '{args.size}'"
+    let arg ← asFinset arg
+    mkAppM ``Finset.max' #[arg, ← mkSorry (← mkFreshTypeMVar) false]
   | .binOp left op right .. => do
     let leftExpr ← asNumber left
     let rightExpr ← asNumber right
