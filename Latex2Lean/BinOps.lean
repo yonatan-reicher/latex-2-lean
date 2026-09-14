@@ -11,8 +11,9 @@ abbrev Ctor := TSyntax ``ctor
 
 namespace Latex2Lean
 
-@[expose]
-public section
+-- =================================================================================================
+--                                       Binary Operator Table
+-- =================================================================================================
 
 structure TableEntry where
   name : String
@@ -52,13 +53,21 @@ def table := #[
   bin_op  supseteq  r"\supseteq"  predicative,
   bin_op  times     r"\times",
 ]
-#reduce table
 
-run_cmd do
-  let ctors ← table.mapM λ entry =>
-    `(ctor| | $(mkIdent $ Name.mkSimple entry.name):ident)
+-- ------ Define the BinOp type --------------------------------------------------------------------
+
+def defineBinOpType := do
   elabCommand =<< `(command|
-    inductive BinOp where
-      $ctors*
+    inductive $name where
+      $(← ctors)*
     deriving DecidableEq, Inhabited, Repr
   )
+where
+  -- For some reason, if we don't put this in a variable Lean fails??
+  name := Lean.mkIdent `BinOp
+  ctors := table.mapM λ entry =>
+    `(ctor| | $(mkIdent $ Name.mkSimple entry.name):ident)
+
+
+public section
+run_cmd defineBinOpType
