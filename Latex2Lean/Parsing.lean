@@ -119,7 +119,7 @@ private partial def binaryOperator : T Option BinOp := do
   BinOp.all.find? fun x => toTokenKind x = t.kind
 where toTokenKind : BinOp → Token.Kind
   | op =>
-    let str := op.toString
+    let str := op.symbol
     let c := str.front?
     if c = some '\\'
     then .command' $ str.drop 1 |>.copy
