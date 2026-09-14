@@ -3,116 +3,13 @@ module
 public import Latex2Lean.Util
 public import Latex2Lean.Pos
 public import Latex2Lean.Range
+public import Latex2Lean.BinOp
 
 public section
 
 
 
 namespace Latex2Lean
-
-
-inductive BinOp where
-  -- numeric symbols
-  | plus
-  | minus
-  | star
-  | slash
-  | lt
-  | le
-  | gt
-  | ge
-  -- other symbols
-  | eq
-  -- words
-  | cap
-  | cup
-  | in_
-  | land
-  | lor
-  | subset
-  | subseteq
-  | supset
-  | supseteq
-  | times
-  deriving DecidableEq, Inhabited, Repr
-
-
-def BinOp.toString : BinOp → String
-  | cap => r"\cap"
-  | land => r"\land"
-  | lor => r"\lor"
-  | cup => r"\cup"
-  | eq => "="
-  | in_ => r"\in"
-  | minus => "-"
-  | plus => "+"
-  | slash => "/"
-  | star => "*"
-  | subset => r"\subset"
-  | subseteq => r"\subseteq"
-  | supset => r"\supset"
-  | supseteq => r"\supseteq"
-  | times => r"\times"
-  | lt => "<"
-  | le => r"\le"
-  | gt => ">"
-  | ge => r"\ge"
-
-
-/-- An operator that returns a true/false value -/
-def BinOp.predicative : BinOp → Bool
-  | .eq
-  | .ge
-  | .gt
-  | .in_
-  | .land
-  | .le
-  | .lor
-  | .lt
-  | .subset
-  | .subseteq
-  | .supset
-  | .supseteq
-    => true
-  | .cap
-  | .cup
-  | .minus
-  | .plus
-  | .slash
-  | .star
-  | .times
-    => false
-
-def BinOp.all : Array BinOp :=
-  #[
-    .cap,
-    .cup,
-    .eq,
-    .ge,
-    .gt,
-    .in_,
-    .land,
-    .le,
-    .lor,
-    .lt,
-    .minus,
-    .plus,
-    .slash,
-    .star,
-    .subset,
-    .subseteq,
-    .supset,
-    .supseteq,
-    .times,
-  ]
-
-theorem BinOp.mem_all : ∀ op, op ∈ all := by
-  intro op
-  simp only [all, List.mem_toArray, List.mem_cons, List.not_mem_nil, or_false]
-  cases op <;> decide
-
-instance : ToString BinOp where
-  toString := BinOp.toString
 
 
 structure Formula.Ident where

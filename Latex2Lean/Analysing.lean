@@ -23,28 +23,6 @@ CSV files, in a format we refer to as "nodes".
 namespace Latex2Lean
 
 
-private def BinOp.toNodeName : BinOp → String
-  | .plus => "+"
-  | .minus => "-"
-  | .star => "*"
-  | .slash => "/"
-  | .eq => "="
-  | .cap => "intersect"
-  | .cup => "union"
-  | .in_ => "in"
-  | .subseteq => "subseteq"
-  | .subset => "subset"
-  | .supseteq => "supseteq"
-  | .supset => "supset"
-  | .times => "times"
-  | .land => "land"
-  | .lor => "lor"
-  | .lt => "lt"
-  | .le => "le"
-  | .gt => "gt"
-  | .ge => "ge"
-
-
 abbrev commaSep {α} [ToString α] (l : List α) : String := ",".intercalate <| l.map toString
 abbrev commaSepIds (l : List Formula) := commaSep <| l.map Formula.id
 
@@ -60,7 +38,7 @@ where
   | .var name _ => s!"var,{name}"
   | .number n _ => s!"num,{n}"
   | .app f x => s!"app,{f.name},{commaSepIds x.toList}"
-  | .binOp left op right => s!"op,{op},{left.id},{right.id}"
+  | .binOp left op right => s!"op,{op.name},{left.id},{right.id}"
   | .simpleSet .set elements _ => s!"set,{commaSepIds elements.toList}"
   | .simpleSet .multiset elements _ => s!"multiset,{commaSepIds elements.toList}"
   | .set k lhs rhs _ =>

@@ -6,13 +6,23 @@ from egglog import *
 def is_set_of_is_finite_set(ast: Ast):
     yield rule(ast.is_finite()).then(ast.is_set())
 
-def is_finite(ast: Ast, elements: Vec[i64], name: String, other: Ast, def_id: AstId, var_id: AstId):
+def is_finite(
+    ast: Ast,
+    elements: Vec[i64],
+    name: String,
+    other: Ast,
+    def_id: AstId,
+    var1_id: AstId,
+    var2_id: AstId,
+):
     # Set
     yield rule(eq(ast.kind()).to(AstKind.set(elements))).then(ast.is_finite())
     # Var
     yield rule(
-        eq(ast).to(Ast(var_id, AstKind.var(name))),
-        AstKind.definition(Ast(def_id, AstKind.bin_op(EQ, var_id, other.id())).id()),
+        eq(ast).to(Ast(var1_id, AstKind.var(name))),
+        AstKind.definition(def_id),
+        Ast(def_id, AstKind.bin_op(EQ, var2_id, other.id())),
+        Ast(var2_id, AstKind.var(name)),
         other.is_finite()
     ).then(
         ast.is_finite()
