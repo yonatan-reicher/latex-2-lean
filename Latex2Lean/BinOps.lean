@@ -11,9 +11,11 @@ abbrev Ctor := TSyntax ``ctor
 
 namespace Latex2Lean
 
+
 -- =================================================================================================
 --                                       Binary Operator Table
 -- =================================================================================================
+
 
 structure TableEntry where
   name : String
@@ -21,40 +23,39 @@ structure TableEntry where
   predicative : Bool
   deriving DecidableEq
 
-local macro "bin_op" name:ident symbol:term pred:("predicative")? : term => do
-  `({
-    name := $(name.getId.toString |> mkStrLit):term
-    symbol := $symbol
-    predicative := $(quote pred.isSome)
-    : TableEntry
-  })
 
-def table := #[
-  -- logic
-  bin_op  eq         "="          predicative,
-  bin_op  land      r"\land"      predicative,
-  bin_op  lor       r"\lor"       predicative,
-  -- arithmetic
-  bin_op  ge        r"\ge"        predicative,
-  bin_op  gt         ">"          predicative,
-  bin_op  le        r"\le"        predicative,
-  bin_op  lt         "<"          predicative,
-  bin_op  minus      "-",
-  bin_op  plus       "+",
-  bin_op  slash      "/",
-  bin_op  star       "*",
-  -- set operations
-  bin_op  cap       r"\cap",
-  bin_op  cup       r"\cup",
-  bin_op  in_       r"\in"        predicative,
-  bin_op  subset    r"\subset"    predicative,
-  bin_op  subseteq  r"\subseteq"  predicative,
-  bin_op  supset    r"\supset"    predicative,
-  bin_op  supseteq  r"\supseteq"  predicative,
-  bin_op  times     r"\times",
-]
+def TableEntry.ofString (line : String.Slice) : Except String TableEntry := do
+  let args :=
+    line.split Char.isWhitespace
+    |>.toArray.map String.Slice.copy
+    |>.filter (not ·.isEmpty)
+  let #[name, symbol, predicative] := args
+    | throw s!"bad number of arguments, expected 3, got {args.size}"
+  let predicative ← do
+    match predicative with
+    | "predicative" => pure true
+    | "non-predicative" => pure false
+    | _ => throw s!"expected either 'predicative' or 'non-predicative' at third field"
+  return { name, symbol, predicative : TableEntry }
 
--- ------ Define the BinOp type --------------------------------------------------------------------
+
+def table : Array TableEntry :=
+  let table_text := by_elab
+    let table_text ← IO.FS.readFile "binary_operators.table"
+    return Lean.mkStrLit table_text
+  table_text.lines.toArray
+  |>.filter fineLine
+  |>.mapM TableEntry.ofString
+  |> λ | .ok x => x
+       | .error e => panic! s!"binary operator table parsing error: {e}"
+where
+  fineLine (s : String.Slice) := not s.isEmpty && not (s.startsWith '#')
+
+
+-- =================================================================================================
+--                                          Defining Types
+-- =================================================================================================
+
 
 def defineBinOpType := do
   elabCommand =<< `(command|
@@ -71,3 +72,4 @@ where
 
 public section
 run_cmd defineBinOpType
+end

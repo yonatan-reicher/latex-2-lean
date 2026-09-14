@@ -2,24 +2,33 @@
 This file generates the file that creates the class for the binary operators.
 """
 
-import egglog
-from pathlib import Path
+from analysis.utils import raise_
 from dataclasses import dataclass
+from pathlib import Path
+import egglog
 
 FILE_PATH = Path('analysis/bin_op.py')
 
 @dataclass(frozen=True, slots=True)
 class BinOpTableEntry:
     name: str
+    symbol: str
+    predicative: bool
 
-BIN_OP_TABLE = [
-    BinOpTableEntry(*args) for args in (
-        ('plus',),
-        ('minus',),
-        ('eq',),
-        ('in',),
-    )
-]
+with open('../binary_operators.table', 'r') as f:
+    BIN_OP_TABLE = [
+        BinOpTableEntry(
+            name = (args := [w for w in line.split(' ') if 0 < len(w)])[0],
+            symbol = args[1],
+            predicative = (
+                True if args[2] == 'predicative' else
+                False if args[2] == 'non-predicative' else
+                raise_(Exception(f"third field was not 'predicative' and was not 'non-predicative'"))
+            ),
+        )
+        for line in [l.replace('\n', '') for l in f.readlines()]
+        if 0 < len(line) and not line.startswith('#')
+    ]
 
 text = f"""
 \"\"\"

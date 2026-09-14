@@ -77,7 +77,7 @@ def scope(
             binders.contains(Ast(
                 binder_id,
                 AstKind.bin_op(
-                    IN,
+                    IN_,
                     Ast(var_id, AstKind.var(var_name)).id(),
                     bound_id,
                 ),
@@ -93,7 +93,7 @@ def scope(
             Ast(
                 binder1_id,
                 AstKind.bin_op(
-                    IN,
+                    IN_,
                     Ast(var_id, AstKind.var(var_name)).id(),
                     bound_id,
                 ),

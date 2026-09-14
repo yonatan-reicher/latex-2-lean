@@ -1,0 +1,26 @@
+# Name      Operators   Predicative
+
+#           Logic
+eq          =           predicative
+land        \land       predicative
+lor         \lor        predicative
+
+#         Arithmetic
+ge          \ge         predicative
+gt          >           predicative
+le          \le         predicative
+lt          <           predicative
+minus       -           non-predicative
+plus        +           non-predicative
+slash       /           non-predicative
+star        *           non-predicative
+
+#       Set Operations
+cap         \cap        non-predicative
+cup         \cup        non-predicative
+in_         \in         predicative
+subset      \subset     predicative
+subseteq    \subseteq   predicative
+supset      \supset     predicative
+supseteq    \supseteq   predicative
+times       \times      non-predicative

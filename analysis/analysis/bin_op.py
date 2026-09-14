@@ -6,23 +6,83 @@ from egglog import *
 # mypy: disable-error-code="empty-body"
 class BinOp(Expr):
     @classmethod
-    def mk_plus(cls) -> BinOp: ...
+    def mk_eq(cls) -> BinOp: ...
+    @classmethod
+    def mk_land(cls) -> BinOp: ...
+    @classmethod
+    def mk_lor(cls) -> BinOp: ...
+    @classmethod
+    def mk_ge(cls) -> BinOp: ...
+    @classmethod
+    def mk_gt(cls) -> BinOp: ...
+    @classmethod
+    def mk_le(cls) -> BinOp: ...
+    @classmethod
+    def mk_lt(cls) -> BinOp: ...
     @classmethod
     def mk_minus(cls) -> BinOp: ...
     @classmethod
-    def mk_eq(cls) -> BinOp: ...
+    def mk_plus(cls) -> BinOp: ...
     @classmethod
-    def mk_in(cls) -> BinOp: ...
+    def mk_slash(cls) -> BinOp: ...
+    @classmethod
+    def mk_star(cls) -> BinOp: ...
+    @classmethod
+    def mk_cap(cls) -> BinOp: ...
+    @classmethod
+    def mk_cup(cls) -> BinOp: ...
+    @classmethod
+    def mk_in_(cls) -> BinOp: ...
+    @classmethod
+    def mk_subset(cls) -> BinOp: ...
+    @classmethod
+    def mk_subseteq(cls) -> BinOp: ...
+    @classmethod
+    def mk_supset(cls) -> BinOp: ...
+    @classmethod
+    def mk_supseteq(cls) -> BinOp: ...
+    @classmethod
+    def mk_times(cls) -> BinOp: ...
 
-PLUS = BinOp.mk_plus()
-MINUS = BinOp.mk_minus()
 EQ = BinOp.mk_eq()
-IN = BinOp.mk_in()
+LAND = BinOp.mk_land()
+LOR = BinOp.mk_lor()
+GE = BinOp.mk_ge()
+GT = BinOp.mk_gt()
+LE = BinOp.mk_le()
+LT = BinOp.mk_lt()
+MINUS = BinOp.mk_minus()
+PLUS = BinOp.mk_plus()
+SLASH = BinOp.mk_slash()
+STAR = BinOp.mk_star()
+CAP = BinOp.mk_cap()
+CUP = BinOp.mk_cup()
+IN_ = BinOp.mk_in_()
+SUBSET = BinOp.mk_subset()
+SUBSETEQ = BinOp.mk_subseteq()
+SUPSET = BinOp.mk_supset()
+SUPSETEQ = BinOp.mk_supseteq()
+TIMES = BinOp.mk_times()
 
 def try_parse_bin_op(s: str) -> BinOp | None:
     match s:
-        case 'plus': return PLUS
-        case 'minus': return MINUS
         case 'eq': return EQ
-        case 'in': return IN
+        case 'land': return LAND
+        case 'lor': return LOR
+        case 'ge': return GE
+        case 'gt': return GT
+        case 'le': return LE
+        case 'lt': return LT
+        case 'minus': return MINUS
+        case 'plus': return PLUS
+        case 'slash': return SLASH
+        case 'star': return STAR
+        case 'cap': return CAP
+        case 'cup': return CUP
+        case 'in_': return IN_
+        case 'subset': return SUBSET
+        case 'subseteq': return SUBSETEQ
+        case 'supset': return SUPSET
+        case 'supseteq': return SUPSETEQ
+        case 'times': return TIMES
         case _: return None
