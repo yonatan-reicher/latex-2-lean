@@ -8,7 +8,9 @@ public import Latex2Lean.LeanCmd
 -- Finset
 public import Mathlib.Data.Finset.Basic
 public import Mathlib.Data.Finset.Card
+public import Mathlib.Data.Finset.Functor
 public import Mathlib.Data.Finset.Max
+public import Mathlib.Data.Finset.Prod
 -- Set
 public import Mathlib.Data.Set.Basic
 -- Multiset
@@ -243,27 +245,29 @@ private partial def asFinset (f : F) : M Expr :=
     mkAppM ``List.toFinset #[list]
   | .set .set _ #[] .. => throwError r"'\set{ .. \mid .. }' with no binders"
   | .set .set lhs binders .. => do
-    -- We need to generate calls to finset operations and assume that the things
-    -- given can be translated to finsets. For `{ x + 1 | x \in A }`, we want to
-    -- use `Finset.image`, like this `A.image fun x => x + 1`. For multiple
-    -- bindings, we want to use `Finset.product` to make tuples first, then you
-    -- get something like `(A.product B).image fun (x, y) => x + y`.
-    let b ← match binders with
-      | #[b] => pure b
-      | _ => throwError m!"not supported yet"
-    let .mk _ <| .binOp (.mk _ <| .var name _) .in_ set := b
-      | panic! "unsupported"
-    -- Get the element type
-    let set ← asFinset set
-    check set
-    let t ← inferType set
-    let some elementType ← getSetElement t
-      | throwError m!"{set} must be a finset, but had type {t}."
-    -- Declare a local
-    withLocalDeclD (.mkSimple name) elementType fun fvar => do
-      -- Return final expression
-      mkAppM ``Finset.image $ (#[·, set]) $
-        ← mkLambdaFVars #[fvar] $ ← asWhatever lhs
+    -- We need to generate calls to finset operations and assume that the things given can be
+    -- translated to finsets. For `{ x + 1 | x \in A }`, we want to use `Finset.image`, like this
+    -- `A.image fun x => x + 1`. For multiple bindings, we want to use `Finset.sup`, which is
+    -- actually the monadic bind operation on finite sets. That's something like
+    -- `X.sum λ x => (Y x).image λ y => x + y`.
+    binders
+    |>.mapIdx (λ idx binderFormula => do
+        let .mk _ <| .binOp (.mk _ <| .var name _) .in_ set := binderFormula
+          | panic! "unsupported"
+        let isLast := idx + 1 == binders.size
+        (name, set, isLast))
+    |>.foldl (init := asWhatever lhs) (λ e (name, set, isLast) => do
+      -- Get the element type
+      let set ← asFinset set
+      check set
+      let t ← inferType set
+      let some elementType ← getSetElement t
+        | throwError m!"{set} must be a finset, but had type {t}."
+      -- Declare a local
+      withLocalDeclD (.mkSimple name) elementType fun fvar => do
+        -- Return final expression
+        let f := if isLast then ``Finset.image else ``Finset.sup
+        mkAppM f $ (#[·, set]) $ ← mkLambdaFVars #[fvar] $ ← e)
   | _ => throwError s!"unsupported formula for translation to finset: {f}"
 
 
