@@ -1,26 +1,26 @@
-# Name      Operators   Predicative
+# Name      Operators   Predicative         Binders
 
 #           Logic
-eq          =           predicative
-land        \land       predicative
-lor         \lor        predicative
+eq          =           predicative         binder
+land        \land       predicative         non-binder
+lor         \lor        predicative         non-binder
 
 #         Arithmetic
-ge          \ge         predicative
-gt          >           predicative
-le          \le         predicative
-lt          <           predicative
-minus       -           non-predicative
-plus        +           non-predicative
-slash       /           non-predicative
-star        *           non-predicative
+ge          \ge         predicative         binder
+gt          >           predicative         binder
+le          \le         predicative         binder
+lt          <           predicative         binder
+minus       -           non-predicative     non-binder
+plus        +           non-predicative     non-binder
+slash       /           non-predicative     non-binder
+star        *           non-predicative     non-binder
 
 #       Set Operations
-cap         \cap        non-predicative
-cup         \cup        non-predicative
-in_         \in         predicative
-subset      \subset     predicative
-subseteq    \subseteq   predicative
-supset      \supset     predicative
-supseteq    \supseteq   predicative
-times       \times      non-predicative
+cap         \cap        non-predicative     non-binder
+cup         \cup        non-predicative     non-binder
+in_         \in         predicative         binder
+subset      \subset     predicative         binder
+subseteq    \subseteq   predicative         binder
+supset      \supset     predicative         binder
+supseteq    \supseteq   predicative         binder
+times       \times      non-predicative     non-binder

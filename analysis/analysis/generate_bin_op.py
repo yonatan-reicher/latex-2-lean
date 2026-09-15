@@ -14,16 +14,24 @@ class BinOpTableEntry:
     name: str
     symbol: str
     predicative: bool
+    binder: bool
 
 with open('../binary_operators.table', 'r') as f:
     BIN_OP_TABLE = [
         BinOpTableEntry(
-            name = (args := [w for w in line.split(' ') if 0 < len(w)])[0],
+            name = args[0]
+                    if len(args := [w for w in line.split(' ') if 0 < len(w)]) == 4
+                    else raise_(Exception(f"line had {len(args)} fields in operator table")),
             symbol = args[1],
             predicative = (
                 True if args[2] == 'predicative' else
                 False if args[2] == 'non-predicative' else
                 raise_(Exception(f"third field was not 'predicative' and was not 'non-predicative'"))
+            ),
+            binder = (
+                True if args[3] == 'binder' else
+                False if args[3] == 'non-binder' else
+                raise_(Exception(f"fourth field was not 'binder' and was not 'non-binder'"))
             ),
         )
         for line in [l.replace('\n', '') for l in f.readlines()]
