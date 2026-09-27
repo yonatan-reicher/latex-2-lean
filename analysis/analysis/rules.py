@@ -30,7 +30,18 @@ def is_finite(
 
 # ------ Parent Of -------------------------------------------------------------
 
-def parent_of(root: Ast, a: Ast, b: Ast, elements: Vec[AstId], bin_op: BinOp):
+def parent_of(
+    root: Ast,
+    a: Ast,
+    b: Ast,
+    elements: Vec[AstId],
+    bin_op: BinOp,
+    # app
+    f: String,
+    i: i64,
+    args: Vec[AstId],
+    arg: Ast,
+):
     rules = [
         # Var
         rule().then(),
@@ -52,10 +63,17 @@ def parent_of(root: Ast, a: Ast, b: Ast, elements: Vec[AstId], bin_op: BinOp):
         rule(eq(root.kind()).to(AstKind.definition(a.id()))).then(root.parent_of(a)),
         # Axiom
         rule(eq(root.kind()).to(AstKind.axiom(a.id()))).then(root.parent_of(a)),
+        # Application
+        rule(
+            eq(root.kind()).to(AstKind.app(f, args)),
+            eq(arg.id()).to(vec_get(args, i)),
+        ).then(root.parent_of(arg)),
+        rule(eq(root.kind()).to(AstKind.app(f, args)))
+            .then(request_vec_get(args)),
         # Error
         rule().then(),
     ]
-    n_expected_rules = N_AST_KINDS + 1 # set comprehension has two
+    n_expected_rules = N_AST_KINDS + 2 # set comprehension and application both have two rules
     assert len(rules) == n_expected_rules, f"{n_expected_rules - len(rules)} rules missing here!"
     return rules
 

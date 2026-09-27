@@ -76,6 +76,11 @@ def parse_file(file: Path) -> dict[int, Ast]:
                     else []
                 )
             )
+        def check_one_arg_many_id_args() -> tuple[str, tuple[AstId, ...]]:
+            if args is None or len(splot := args.split(',')) < 1:
+                raise KindParseError(f"expected at least one argument")
+            arg1, *rest = splot
+            return arg1, tuple(ast_id(x) for x in rest)
         # Actual code
         if kind_str == "var":
             return AstKind.var(check_one_arg())
@@ -95,6 +100,9 @@ def parse_file(file: Path) -> dict[int, Ast]:
             return AstKind.setComp(lhs, Vec[AstId](*rest))
         elif kind_str == "definition":
             return AstKind.definition(check_one_id_arg())
+        elif kind_str == "app":
+            name, rest = check_one_arg_many_id_args()
+            return AstKind.app(name, rest)
         else:
             return AstKind.error(f"Unknown kind '{kind_str}'")
 
