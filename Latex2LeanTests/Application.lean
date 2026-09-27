@@ -8,10 +8,9 @@ opaque y : Int
 -- #guard a = a
 
 /--
-error:
-Error translating formula 'A = (\sum 3 2)': Could not translate (\sum 3 2).
+error: Error translating formula 'A = (\sum 3 2)': Could not translate (\sum 3 2).
 Errors:
-function '\sum had too many arguments!
+function '\sum' had too many arguments!
 unsupported formula for translation to set: (\sum 3 2)
 unsupported formula for translation to finset: (\sum 3 2)
 unsupported formula for translation to multi-set: (\sum 3 2)
