@@ -2,6 +2,39 @@ from analysis.ast import Ast, AstId, AstKind, ast_rules, N_AST_KINDS
 from analysis.bin_op import *
 from analysis.vec_get import vec_get, request_vec_get, rules as vec_get_rules
 from egglog import *
+from typing import Any, Callable
+
+# ------ Helpers ---------------------------------------------------------------
+
+def variable_rules(f: Callable[[Ast], Fact | BaseExpr]):
+    def func(
+        var_1: Ast,
+        var_2: Ast,
+        name: String,
+        definition: Ast,
+        x: Ast,
+    ):
+        return [
+            # Var ⇒ Def
+            rule(
+                Ast(var_1.id(), AstKind.var(name)),
+                AstKind.definition(definition.id()),
+                Ast(definition.id(), AstKind.bin_op(EQ, var_2.id(), x.id())),
+                Ast(var_2.id(), AstKind.var(name)),
+                f(var_2),
+            ).then(f(x)),
+            # Def ⇒ Var
+            rule(
+                Ast(var_1.id(), AstKind.var(name)),
+                AstKind.definition(definition.id()),
+                Ast(definition.id(), AstKind.bin_op(EQ, var_2.id(), x.id())),
+                Ast(var_2.id(), AstKind.var(name)),
+                f(x),
+            ).then(f(var_2)),
+        ]
+    return func
+
+# ------ Is Finite -------------------------------------------------------------
 
 def is_set_of_is_finite_set(ast: Ast):
     yield rule(ast.is_finite()).then(ast.is_set())
@@ -9,24 +42,22 @@ def is_set_of_is_finite_set(ast: Ast):
 def is_finite(
     ast: Ast,
     elements: Vec[i64],
-    name: String,
-    other: Ast,
-    def_id: AstId,
-    var1_id: AstId,
-    var2_id: AstId,
 ):
     # Set
     yield rule(eq(ast.kind()).to(AstKind.set(elements))).then(ast.is_finite())
-    # Var
-    yield rule(
-        eq(ast).to(Ast(var1_id, AstKind.var(name))),
-        AstKind.definition(def_id),
-        Ast(def_id, AstKind.bin_op(EQ, var2_id, other.id())),
-        Ast(var2_id, AstKind.var(name)),
-        other.is_finite()
-    ).then(
-        ast.is_finite()
-    )
+
+# ------ Used As Finite --------------------------------------------------------
+
+def used_as_finite(
+    # App
+    app: Ast,
+    arg: Ast,
+):
+    return [
+        # Abs
+        rule(Ast(app.id(), AstKind.app("\\abs", [arg.id()])))
+            .then(app.used_as_finite()),
+    ]
 
 # ------ Parent Of -------------------------------------------------------------
 
@@ -136,10 +167,17 @@ def scope(
 # ------ All -------------------------------------------------------------------
 
 all = [
+    # Import rules
     *ast_rules,
     *vec_get_rules,
+    # Is Finite
     is_set_of_is_finite_set,
     is_finite,
+    variable_rules(Ast.is_finite),
+    # Used As Finite
+    used_as_finite,
+    variable_rules(Ast.used_as_finite),
+    # Other
     parent_of,
     scope,
 ]
