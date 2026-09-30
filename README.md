@@ -1,3 +1,105 @@
+# Latex To Lean
+
+This project is an attempt in automatically converting some subset of LaTeX code
+to Lean 4.
+
+The project is basically a library that provides a macro that takes some text,
+parses it, analyses it, and then emits some Lean code into the environment with
+it.
+
+## Files
+
+### Documentation
+
+- `CHANGELOG.md` - what I haven't shown Shachar yet
+- `CLAUDE.md`
+- `README.md`
+- `design.md` - original idea for the main pipeline
+- `grammar.txt` - grammar for the parser, not exactly accurate
+
+### Markdown Proofs
+
+- `ladder.md` - attempt at translating part of the multi-segment project's proofs
+- `proof-adjusted.md` - yuval's domino proof, adjusted to be readable by the tool
+- `proof.md`- yuval's original domino proof
+
+### Lean
+
+- `Latex2Lean.lean`
+- `Latex2Lean/`
+- `├── Analysing.lean`
+- `├── Analysis`
+- `│   ├── Basic.lean`
+- `│   ├── FromCsvs.lean`
+- `│   └── Monad.lean`
+- `├── Analysis.lean`
+- `├── Basic.lean`
+- `├── BinOp.lean`
+- `├── CategorizedFormula.lean`
+- `├── Categorizing.lean`
+- `├── Csv.lean`
+- `├── Emitting.lean`
+- `├── Formula.lean`
+- `├── Functions.lean`
+- `├── InlineMath.lean`
+- `├── Input.lean`
+- `├── LeanCmd.lean`
+- `├── LeanUtil.lean`
+- `├── Lexing.lean`
+- `├── Macros.lean`
+- `├── Node`
+- `│   ├── Asserts.lean`
+- `│   ├── Basic.lean`
+- `│   ├── FromLatex.lean`
+- `│   ├── FromString.lean`
+- `│   ├── ToString.lean`
+- `│   └── ToTerm.lean`
+- `├── Node.lean`
+- `├── Parsing.lean`
+- `├── Pos.lean`
+- `├── Range.lean`
+- `├── RunAnalysisProcess.lean`
+- `├── Souffle.lean`
+- `├── Spanning.lean`
+- `├── Text.lean`
+- `├── Token.lean`
+- `├── Translating.lean`
+- `└── Util.lean`
+- `Latex2LeanTests/`
+- `├── Application.lean`
+- `├── Exists.lean`
+- `├── Finset.lean`
+- `├── Forall.lean`
+- `└── Sum.lean`
+1 directory, 5 files
+- `ManualTest.lean` - manual testing to see if things works
+
+### Source Generation
+
+- `binary_operators.table`
+
+### Analysis
+
+- `analysis/` - the current version of the static analysis
+- `souffle-analysis/` - old version of the static analysis
+- `ui/` - Shachar did some node something for the counter example test, i
+  haven't looked at this
+- `venv/` - the main virtual environment (there is another one somewhere, but
+  that is old, use `. venv/bin/activate` on bash, and
+  `overlay use venv/bin/activate.nu` on Nushell)
+
+### Misc
+
+- `zfc-abstractions/` - playing around with making a another tool that finds
+  satisfying models
+
+
+
+
+
+
+
+
 # Latex2Lean
 
 This project is an attempt in automatically converting LaTeX code and formulae
