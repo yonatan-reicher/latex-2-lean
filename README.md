@@ -9,7 +9,7 @@ then emits some Lean code into the environment with it.
 
 ## High Level
 
-> [!INFO]
+> [!note]
 > Inside Lean, the syntax is:
 > ```
 > define_latex file [verbose] r"<file-path>"
@@ -21,7 +21,7 @@ without the backslash interpreted as the start of an escape sequence. These
 strings also accept raw newline characters. You can use regular `"..."` strings
 instead, but that doesn't seem useful to me)
 
-> [!TIP]
+> [!tip]
 > Example:
 > ```lean
 > define_latex r"
