@@ -39,7 +39,8 @@ instead, but that doesn't seem useful to me)
 
 The input text itself consists of free-form texts, with inline math surrounded
 by either `$` or `$$`. This was chosen because a lot of existing markdown tools
-support this feature (For example, Visual Studio Code's markdown preview).
+support this feature (For example, Visual Studio Code's markdown preview, and
+GitHub's markdown rendering).
 These tools expect a dialect of LaTeX math-mode inside these inline math spans
 of text.
 
